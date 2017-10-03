@@ -1,0 +1,6 @@
+.cproject
+.project
+build/
+idea/
+lib/
+env/
