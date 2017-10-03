@@ -1,5 +1,4 @@
 #include "matrix.cuh"
-#include "metric.cuh"
 #include <algorithm>
 
 namespace scl
@@ -275,70 +274,6 @@ namespace scl
 
 		cudaFree(d_temp_storage);
 	}
-
-	void gradient_descent_solve(const Matrix<scl_float>& A, Matrix<scl_float>& X, const Matrix<scl_float>& B, Matrix<scl_float>& R, DeviceContext& context, scl_float eps, scl_float min_rmse_change)
-	{
-		residual(B, A, X, R, context);
-
-		const int max_iterations = 1000;
-		scl_float best_rmse = FLT_MAX;
-
-		for (int i = 0; i < max_iterations; i++)
-		{
-			scl_float alpha = eps / A.rows();
-			const scl_float beta = 1.0f;
-			safe_cublas(cublasSgemm(context.cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, X.rows(), X.columns(), A.rows(), &alpha, A.data(), A.rows(), R.data(), R.rows(), &beta, X.data(), X.rows()));
-			//Recalculate residual
-			residual(B, A, X, R, context);
-
-			scl_float rmse = rmse_metric(R);
-
-			if (std::abs(best_rmse - rmse) < min_rmse_change)
-			{
-				break;
-			}
-
-			if (rmse > best_rmse)
-			{
-				eps *= 0.5;
-			}
-			else
-			{
-				best_rmse = rmse;
-				eps *= 1.05;
-			}
-
-		}
-	}
-
-	void test_linear_solve()
-	{
-		DeviceContext context;
-
-		int n = 5;
-		int m = 6;
-		int k = 3;
-		Matrix<scl_float> A(m, n);
-		A.random(9);
-		Matrix<scl_float> X(n, k);
-		X.random(17);
-		Matrix<scl_float> B(m, k);
-		multiply(A, X, B, context);
-
-		Matrix<scl_float> solution(n, k);
-		//linear_solve(A, solution, B, context);
-		Matrix<scl_float> R(B.rows(), B.columns());
-		gradient_descent_solve(A, solution, B, R, context);
-		printf("A\n");
-		A.print();
-		printf("X\n");
-		X.print();
-		printf("B\n");
-		B.print();
-		printf("solution\n");
-		solution.print();
-	}
-
 
 	void residual(const Matrix<scl_float>& X, const Matrix<scl_float>& D, const Matrix<scl_float>& S, Matrix<scl_float>& R, DeviceContext& context)
 	{
