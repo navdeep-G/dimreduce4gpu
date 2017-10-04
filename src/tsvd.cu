@@ -3,11 +3,11 @@
 #include "utils.cuh"
 #include "matrix.cuh"
 #include "device_context.cuh"
-#include <scl.h>
+#include <tsvd.h>
 #include <ctime>
 
 
-namespace scl
+namespace tsvd
 {
 
 void truncated_svd(const double* _X, double* _Q, double* _w, params _param)
@@ -43,15 +43,15 @@ void truncated_svd(const double* _X, double* _Q, double* _w, params _param)
 		}
 		catch (std::exception e)
 		{
-			std::cerr << "scl error: " << e.what() << "\n";
+			std::cerr << "tsvd error: " << e.what() << "\n";
 		}
 		catch (std::string e)
 		{
-			std::cerr << "scl error: " << e << "\n";
+			std::cerr << "tsvd error: " << e << "\n";
 		}
 		catch (...)
 		{
-			std::cerr << "scl error\n";
+			std::cerr << "tsvd error\n";
 		}
 	}
 

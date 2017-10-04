@@ -4,3 +4,4 @@ build/
 idea/
 lib/
 env/
+python/.idea/workspace.xml

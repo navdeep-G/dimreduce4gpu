@@ -9,9 +9,9 @@
 #include <ctime>
 #include <cusparse.h>
 
-namespace scl
+namespace tsvd
 {
-#define scl_error(x) error(x, __FILE__, __LINE__);
+#define tsvd_error(x) error(x, __FILE__, __LINE__);
 
 	inline void error(const char* e, const char* file, int line)
 	{
@@ -22,7 +22,7 @@ namespace scl
 		exit(-1);
 	}
 
-#define scl_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
+#define tsvd_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
 
 	inline void check(bool val, const char* e, const char* file, int line)
 	{

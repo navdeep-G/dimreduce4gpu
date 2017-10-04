@@ -6,13 +6,13 @@ dll_path = [os.path.join(curr_path, '../lib/'),
                 os.path.join(curr_path, './lib/')]
 
 if os.name == 'nt':
-    dll_path = [os.path.join(p, 'scl.dll') for p in dll_path]
+    dll_path = [os.path.join(p, 'tsvd.dll') for p in dll_path]
 else:
-    dll_path = [os.path.join(p, 'libscl.so') for p in dll_path]
+    dll_path = [os.path.join(p, 'libtsvd.so') for p in dll_path]
 
 lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
 
-setup(name='scl', 
-    py_modules=['scl'],
-    data_files=[('scl', lib_path)])
+setup(name='tsvd', 
+    py_modules=['tsvd'],
+    data_files=[('tsvd', lib_path)])
 

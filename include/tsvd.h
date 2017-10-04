@@ -1,17 +1,17 @@
 #pragma once
 
 #ifdef WIN32
-#define scl_export __declspec(dllexport)
+#define tsvd_export __declspec(dllexport)
 #else
-#define scl_export
+#define tsvd_export
 #endif
 
-namespace scl
+namespace tsvd
 {
 	extern "C"
 	{
 
-		typedef float  scl_float;
+		typedef float  tsvd_float;
 
 		struct params
 		{
@@ -28,6 +28,6 @@ namespace scl
 		 * \param 		  	_param
 		 */
 
-		scl_export void truncated_svd(const double * _X, double * _Q, double * _w, params _param);
+		tsvd_export void truncated_svd(const double * _X, double * _Q, double * _w, params _param);
 	}
 }

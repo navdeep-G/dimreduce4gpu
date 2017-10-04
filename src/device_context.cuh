@@ -4,7 +4,7 @@
 #include <cusparse.h>
 #include <cusolverDn.h>
 
-namespace scl
+namespace tsvd
 {
 	class DeviceContext
 	{
