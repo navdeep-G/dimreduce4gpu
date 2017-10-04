@@ -33,6 +33,7 @@ void calculate_u(const Matrix<float> &X, const Matrix<float> &Qt, const Matrix<f
 
 }
 
+
 void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params _param)
 {
 	try
@@ -52,7 +53,7 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		calculate_eigen_pairs_exact(XtX, Q, w, context);
 		Matrix<float>Qt(Q.columns(), Q.rows());
 		transpose(Q, Qt, context);
-		Qt.copy_to_host(_Q);
+		Qt.copy_to_host(_Q); //Send to host
 
 		w.transform([=]__device__(float elem){
 			if(elem > 0.0){
@@ -63,14 +64,14 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		}
 		);
 		std::vector<double> w_temp(w.size());
-		w.copy_to_host(w_temp.data());
+		w.copy_to_host(w_temp.data()); //Send to host
 		std::reverse(w_temp.begin(), w_temp.end());
 		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
 
 		//Get U matrix
 		Matrix<float>U(X.columns(), X.columns());
 		calculate_u(X, Qt, w, U, context);
-		U.copy_to_host(_U);
+		U.copy_to_host(_U); //Send to host
 
 		}
 		catch (std::exception e)
