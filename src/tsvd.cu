@@ -6,9 +6,11 @@
 #include <tsvd.h>
 #include <ctime>
 #include <thrust/iterator/counting_iterator.h>
+#include<algorithm>
 
 namespace tsvd
 {
+
 //Calculate U, which is:
 // U = A*V/sigma where A is our X Matrix, V is Qt, and sigma is 1/w_i
 void calculate_u(const Matrix<float> &X, const Matrix<float> &Qt, const Matrix<float> &w, Matrix<float> &U, DeviceContext &context){
@@ -31,7 +33,7 @@ void calculate_u(const Matrix<float> &X, const Matrix<float> &Qt, const Matrix<f
 
 }
 
-void truncated_svd(const double* _X, double* _Q, double* _w, params _param)
+void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params _param)
 {
 	try
 	{
@@ -50,7 +52,8 @@ void truncated_svd(const double* _X, double* _Q, double* _w, params _param)
 		calculate_eigen_pairs_exact(XtX, Q, w, context);
 		Matrix<float>Qt(Q.columns(), Q.rows());
 		transpose(Q, Qt, context);
-		Qt.print();
+		Qt.copy_to_host(_Q);
+
 		w.transform([=]__device__(float elem){
 			if(elem > 0.0){
 				return std::sqrt(elem);
@@ -59,12 +62,16 @@ void truncated_svd(const double* _X, double* _Q, double* _w, params _param)
 			}
 		}
 		);
-		w.print();
+		std::vector<double> w_temp(w.size());
+		w.copy_to_host(w_temp.data());
+		std::reverse(w_temp.begin(), w_temp.end());
+		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
 
 		//Get U matrix
 		Matrix<float>U(X.columns(), X.columns());
 		calculate_u(X, Qt, w, U, context);
-		U.print();
+		U.copy_to_host(_U);
+
 		}
 		catch (std::exception e)
 		{

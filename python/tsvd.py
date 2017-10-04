@@ -28,7 +28,7 @@ except:
     pass
 _mod = ctypes.cdll.LoadLibrary(lib_path[0])
 _sparse_code = _mod.truncated_svd
-_sparse_code.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), params]
+_sparse_code.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), params]
 
 def as_fptr(x):
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
@@ -36,12 +36,13 @@ def as_fptr(x):
 def truncated_svd(X, k):
     X = np.asfortranarray(X, dtype=np.float64)
     Q = np.empty((X.shape), dtype=np.float64, order='F')
+    U = np.empty((X.shape[1], X.shape[1]), dtype=np.float64, order='F')
     w = np.empty(k, dtype=np.float64)
     param = params()
     param.X_m = X.shape[0]
     param.X_n = X.shape[1]
     param.k = k
 
-    _sparse_code(as_fptr(X), as_fptr(Q), as_fptr(w), param)
+    _sparse_code(as_fptr(X), as_fptr(Q), as_fptr(w),as_fptr(U), param)
 
-    return Q, w
+    return Q, U, w

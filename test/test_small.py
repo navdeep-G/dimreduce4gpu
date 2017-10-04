@@ -8,9 +8,12 @@ X = np.array([[1, 2, 3], [4, 5, 6], [7,8,9], [10,11,12]], np.float32)
 k = 2
 
 print("Truncated SVD")
-tsvd.truncated_svd(X,k)
-svd.fit(X)
+trunc = tsvd.truncated_svd(X,k)
+print(trunc[0])
+print(trunc[1])
+print(trunc[2])
 
 print("Sklearn")
+svd.fit(X)
 print(svd.singular_values_)
 print(svd.components_)

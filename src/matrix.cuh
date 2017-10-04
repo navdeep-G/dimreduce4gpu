@@ -290,6 +290,12 @@ namespace tsvd
 		{
 			thrust::transform(this->dptr(), this->dptr() + this->size(), this->dptr(), f);
 		}
+
+		//Copy contents of matrix to host pointer
+		template<typename host_ptr_t>
+		void copy_to_host(host_ptr_t ptr){
+			thrust::copy(this->dptr(), this->dptr() + this->size(), ptr);
+		}
 	};
 
 	/**

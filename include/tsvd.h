@@ -25,9 +25,10 @@ namespace tsvd
 		 * \param 		  	_X
 		 * \param [in,out]	_Q
 		 * \param [in,out]	_w
+		 * \param [in,out]  _U
 		 * \param 		  	_param
 		 */
 
-		tsvd_export void truncated_svd(const double * _X, double * _Q, double * _w, params _param);
+		tsvd_export void truncated_svd(const double * _X, double * _Q, double * _w, double* _U, params _param);
 	}
 }
