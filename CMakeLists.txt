@@ -20,6 +20,6 @@ else()
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 endif()
 
-cuda_add_library(mat SHARED ${SOURCES})
+cuda_add_library(scl SHARED ${SOURCES})
 
-target_link_libraries(mat ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})
+target_link_libraries(scl ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})

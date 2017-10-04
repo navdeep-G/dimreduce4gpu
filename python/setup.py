@@ -8,7 +8,7 @@ dll_path = [os.path.join(curr_path, '../lib/'),
 if os.name == 'nt':
     dll_path = [os.path.join(p, 'scl.dll') for p in dll_path]
 else:
-    dll_path = [os.path.join(p, 'libmat.so') for p in dll_path]
+    dll_path = [os.path.join(p, 'libscl.so') for p in dll_path]
 
 lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
 

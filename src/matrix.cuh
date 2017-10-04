@@ -335,6 +335,12 @@ namespace scl
 				printf("\n");
 			}
 		}
+
+		template<typename function_t>
+		void transform(function_t f)
+		{
+			thrust::transform(this->dptr(), this->dptr() + this->size(), this->dptr(), f);
+		}
 	};
 
 	/**
@@ -461,6 +467,8 @@ namespace scl
 
 	void normalize_columns(Matrix<scl_float>& M, Matrix<scl_float>& M_temp, Matrix<scl_float>& column_length, const Matrix<scl_float>& ones, DeviceContext& context);
 
+	void normalize_columns(Matrix<scl_float>& M, DeviceContext& context);
+
 	void f_normalize(Matrix<scl_float>& M, DeviceContext& context);
 
 	void gradient_descent_solve(const Matrix<scl_float>& A, Matrix<scl_float>& X, const Matrix<scl_float>& B, Matrix<scl_float>& R, DeviceContext& context, scl_float eps = 0.1, scl_float min_rmse_change = 1e-5);
@@ -478,4 +486,8 @@ namespace scl
 	 */
 
 	void residual(const Matrix<scl_float>& X, const Matrix<scl_float>& D, const Matrix<scl_float>& S, Matrix<scl_float>& R, DeviceContext& context);
+
+	void calculate_eigen_pairs_exact(const Matrix<scl_float>& X, Matrix<scl_float>& Q, Matrix<scl_float>& w, DeviceContext& context);
+
+
 }

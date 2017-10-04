@@ -17,7 +17,9 @@ namespace scl
 	{
 		std::stringstream ss;
 		ss << e << " - " << file << "(" << line << ")";
-		throw ss.str();
+		//throw error_text;
+		std::cerr << ss.str() << std::endl;
+		exit(-1);
 	}
 
 #define scl_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
@@ -39,7 +41,9 @@ namespace scl
 		{
 			std::stringstream ss;
 			ss << cudaGetErrorString(code) << " - " << file << "(" << line << ")";
-			throw ss.str();
+			//throw error_text;
+			std::cerr << ss.str() << std::endl;
+			exit(-1);
 		}
 
 		return code;
@@ -87,7 +91,9 @@ namespace scl
 			ss << cublasGetErrorEnum(status) << " - " << file << "(" << line << ")";
 			std::string error_text;
 			ss >> error_text;
-			throw error_text;
+			//throw error_text;
+			std::cerr << error_text << std::endl;
+			exit(-1);
 		}
 
 		return status;
@@ -103,7 +109,9 @@ namespace scl
 			ss << "cusolver error: " << file << "(" << line << ")";
 			std::string error_text;
 			ss >> error_text;
-			throw error_text;
+			//throw error_text;
+			std::cerr << error_text << std::endl;
+			exit(-1);
 		}
 
 		return status;
@@ -119,7 +127,9 @@ namespace scl
 			ss << "cusparse error: " << file << "(" << line << ")";
 			std::string error_text;
 			ss >> error_text;
-			throw error_text;
+			//throw error_text;
+			std::cerr << error_text << std::endl;
+			exit(-1);
 		}
 
 		return status;

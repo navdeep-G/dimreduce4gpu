@@ -208,6 +208,31 @@ namespace scl
 		safe_cublas(cublasSdgmm(context.cublas_handle, CUBLAS_SIDE_RIGHT, M.rows(), M.columns(), M.data(), M.rows(), d_column_length, 1, M.data(), M.rows()));
 	}
 
+	void normalize_columns(Matrix<scl_float>& M, DeviceContext& context)
+	{
+		Matrix<float>M_temp(1, M.rows());
+		thrust::transform(M.dptr(), M.dptr() + M.size(), M_temp.dptr(), sqr_op());
+		Matrix<float>column_length(1, M.columns());
+		auto d_column_length = column_length.data();
+		const scl_float alpha = 1.0f;
+		const scl_float beta = 0.0f;
+		Matrix<scl_float>ones(1,M.columns());
+		ones.fill(1.0f);
+		safe_cublas(cublasSgemv(context.cublas_handle, CUBLAS_OP_T, M.rows(), M.columns(), &alpha, M_temp.data(), M.rows(), ones.data(), 1, &beta, d_column_length, 1));
+
+		thrust::transform(column_length.dptr(), column_length.dptr() + column_length.size(), column_length.dptr(), [=]__device__(scl_float val)
+		                  {
+							  if (val == 0.0)
+							  {
+								  return 0.0;
+							  }
+
+			                  return 1.0/ sqrt(val);
+		                  });
+
+		safe_cublas(cublasSdgmm(context.cublas_handle, CUBLAS_SIDE_RIGHT, M.rows(), M.columns(), M.data(), M.rows(), d_column_length, 1, M.data(), M.rows()));
+	}
+
 	void f_normalize(Matrix<scl_float>& M, DeviceContext& context)
 	{
 		Matrix<scl_float> temp(M.rows(), M.columns());
@@ -279,5 +304,29 @@ namespace scl
 	{
 		multiply(D, S, R, context);
 		subtract(X, R, R, context);
+	}
+
+	void calculate_eigen_pairs_exact(const Matrix<scl_float>& X, Matrix<scl_float>& Q, Matrix<scl_float>& w, DeviceContext& context)
+	{
+		scl_check(X.rows() == X.columns(), "X must be a symmetric matrix");
+		scl_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
+		scl_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
+
+		int lwork;
+		safe_cusolver(cusolverDnSsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
+
+		float *d_work;
+		safe_cuda(cudaMalloc(&d_work, sizeof(float) * lwork));
+
+		int *dev_info = NULL;
+		safe_cuda(cudaMalloc ((void**)&dev_info, sizeof(int)));
+		Q.copy(X);
+		safe_cusolver(cusolverDnSsyevd(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, Q.rows(), Q.data(), Q.columns(), w.data(), d_work, lwork, dev_info));
+		safe_cuda(cudaDeviceSynchronize());
+		safe_cuda(cudaFree(d_work));
+		safe_cuda(cudaFree(dev_info));
+		safe_cuda(cudaGetLastError());
+
+
 	}
 }
