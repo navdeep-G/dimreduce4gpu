@@ -27,8 +27,8 @@ try:
 except:
     pass
 _mod = ctypes.cdll.LoadLibrary(lib_path[0])
-_sparse_code = _mod.truncated_svd
-_sparse_code.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), params]
+_tsvd_code = _mod.truncated_svd
+_tsvd_code.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), params]
 
 def as_fptr(x):
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
@@ -43,6 +43,6 @@ def truncated_svd(X, k):
     param.X_n = X.shape[1]
     param.k = k
 
-    _sparse_code(as_fptr(X), as_fptr(Q), as_fptr(w),as_fptr(U), param)
+    _tsvd_code(as_fptr(X), as_fptr(Q), as_fptr(w),as_fptr(U), param)
 
     return Q, U, w
