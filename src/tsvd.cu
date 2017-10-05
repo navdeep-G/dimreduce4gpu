@@ -76,7 +76,6 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		transpose(Q, Qt, context); //Needed for calculate_u()
 		Matrix<float>QtTrunc(_param.k, Qt.columns());
 		row_reverse_trunc_q(Qt, QtTrunc, context);
-		QtTrunc.print();
 		QtTrunc.copy_to_host(_Q); //Send to host
 
 		//Obtain square root of eigenvalues, which are singular values
