@@ -11,6 +11,7 @@
 namespace tsvd
 {
 
+// Truncated Q to k vectors (truncated svd)
 void row_reverse_trunc_q(const Matrix<float> &Qt, Matrix<float> &QtTrunc, DeviceContext &context){
 
 	auto m = Qt.rows();
@@ -74,8 +75,7 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		Matrix<float>Qt(Q.columns(), Q.rows());
 		transpose(Q, Qt, context); //Needed for calculate_u()
 		Matrix<float>QtTrunc(_param.k, Qt.columns());
-		row_reverse_q(Qt, QtTrunc, context);
-		Qt.print();
+		row_reverse_trunc_q(Qt, QtTrunc, context);
 		QtTrunc.print();
 		QtTrunc.copy_to_host(_Q); //Send to host
 
