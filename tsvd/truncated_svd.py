@@ -30,16 +30,16 @@ class TruncatedSVD(object):
         return self
 
     @property
-    def X(self):
-        return self._X
-
-    @property
-    def Q(self):
+    def components_(self):
         return self._Q
 
     @property
-    def w(self):
+    def singular_values_(self):
         return self._w
+
+    @property
+    def X(self):
+        return self._X
 
     @property
     def U(self):
