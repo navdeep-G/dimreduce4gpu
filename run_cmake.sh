@@ -8,7 +8,7 @@ fi
 cd build
 cmake ..
 make
-cd ../tsvd
+cd ..
 python setup.py install
-cd ../test
+cd test
 python test_small.py

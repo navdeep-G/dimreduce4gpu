@@ -10,7 +10,8 @@ class TruncatedSVD(object):
 
     def fit(self, X):
         X = np.asfortranarray(X, dtype=np.float64)
-        Q = np.empty((X.shape), dtype=np.float64, order='F')
+        print(str(X.shape))
+        Q = np.empty((X.shape[1], X.shape[1]), dtype=np.float64, order='F')
         U = np.empty((X.shape[1], X.shape[1]), dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
         param = params()

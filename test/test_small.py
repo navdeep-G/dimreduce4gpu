@@ -19,9 +19,13 @@ trunc = truncated_svd.TruncatedSVD(n_components=k) #Not really using k yet...
 trunc.fit(X)
 end_time = time.time() - start_time
 print("Total time for tsvd is " + str(end_time))
+print("Q matrix (V^T)")
 print(trunc.Q)
+print("w matrix (sigma/singular values)")
 print(trunc.w)
+print("U matrix")
 print(trunc.U)
+print("Original X Matrix")
 print(trunc.X)
 
 print("Sklearn")
@@ -29,5 +33,7 @@ start_sk = time.time()
 svd.fit(X)
 end_sk = time.time() - start_sk
 print("Total time for sklearn is " + str(end_sk))
+print("Singular Values")
 print(svd.singular_values_)
+print("Components (V^T)")
 print(svd.components_)

@@ -47,12 +47,12 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		DeviceContext context;
 		multiply(X, X, XtX, context, true, false, 1.0f);
 
-		Matrix<float>Q(XtX.rows(), XtX.columns());
+		Matrix<float>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
 		Matrix<float>w(Q.rows(), 1);
 
 		calculate_eigen_pairs_exact(XtX, Q, w, context);
 		Matrix<float>Qt(Q.columns(), Q.rows());
-		transpose(Q, Qt, context);
+		transpose(Q, Qt, context); //Needed for calculate_u()
 		Qt.copy_to_host(_Q); //Send to host
 
 		w.transform([=]__device__(float elem){
