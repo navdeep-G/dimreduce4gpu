@@ -400,12 +400,6 @@ namespace tsvd
 
 	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context);
 
-	void f_normalize(Matrix<tsvd_float>& M, DeviceContext& context);
-
-	void gradient_descent_solve(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& X, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& R, DeviceContext& context, tsvd_float eps = 0.1, tsvd_float min_rmse_change = 1e-5);
-
-	void test_linear_solve();
-
 	/**
 	 * \fn	void residual(const Matrix<tsvd_float >&X, const Matrix<tsvd_float >&D, const Matrix<tsvd_float >&S, Matrix<tsvd_float >&R, DeviceContext & context);
 	 *
