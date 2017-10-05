@@ -7,3 +7,5 @@ env/
 *.idea/
 .idea/
 python/.idea/workspace.xml
+tsvd/__pycache__/
+.run_cmake.sh.swp

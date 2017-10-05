@@ -12,7 +12,7 @@ else:
 
 lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
 
-setup(name='tsvd', 
-    py_modules=['tsvd'],
+setup(name='tsvd',
+    packages=['tsvd',],
     data_files=[('tsvd', lib_path)])
 

@@ -1,4 +1,4 @@
-import tsvd
+from tsvd import truncated_svd
 import numpy as np
 import time
 from sklearn.decomposition import TruncatedSVD
@@ -15,12 +15,14 @@ k = 2
 print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix")
 print("Truncated SVD")
 start_time = time.time()
-trunc = tsvd.truncated_svd(X,k) #Not really using k yet...
+trunc = truncated_svd.TruncatedSVD(n_components=k) #Not really using k yet...
+trunc.fit(X)
 end_time = time.time() - start_time
 print("Total time for tsvd is " + str(end_time))
-print(trunc[0])
-print(trunc[1])
-print(trunc[2])
+print(trunc.Q)
+print(trunc.w)
+print(trunc.U)
+print(trunc.X)
 
 print("Sklearn")
 start_sk = time.time()
