@@ -11,6 +11,22 @@
 namespace tsvd
 {
 
+void col_reverse_q(const Matrix<float> &Q, Matrix<float> &QReversed, DeviceContext &context){
+	auto n = Q.columns();
+	auto m = Q.rows();
+	auto k = QReversed.rows();
+	auto d_q = Q.data();
+	auto d_q_reversed = QReversed.data();
+	auto counting = thrust::make_counting_iterator <int>(0);
+	thrust::for_each(counting, counting+QReversed.size(), [=]__device__(int idx){
+		int dest_row = idx % m;
+		int dest_col = idx/m;
+		int src_row = dest_row;
+		int src_col = (n - dest_col) - 1;
+		d_q_reversed[idx] = d_q[src_col * m + src_row];
+	} );
+}
+
 // Truncated Q to k vectors (truncated svd)
 void row_reverse_trunc_q(const Matrix<float> &Qt, Matrix<float> &QtTrunc, DeviceContext &context){
 
@@ -30,10 +46,10 @@ void row_reverse_trunc_q(const Matrix<float> &Qt, Matrix<float> &QtTrunc, Device
 }
 
 // Calculate U, which is:
-// U = A*V/sigma where A is our X Matrix, V is Qt, and sigma is 1/w_i
-void calculate_u(const Matrix<float> &X, const Matrix<float> &Qt, const Matrix<float> &w, Matrix<float> &U, DeviceContext &context){
+// U = A*V/sigma where A is our X Matrix, V is Q, and sigma is 1/w_i
+void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<float> &w, Matrix<float> &U, DeviceContext &context){
 
-	multiply(X, Qt, U, context, false, true, 1.0f); //A*V
+	multiply(X, Q, U, context, false, false, 1.0f); //A*V
 	auto d_u = U.data();
 	auto d_sigma = w.data();
 	auto column_size = U.rows();
@@ -93,11 +109,19 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		w.copy_to_host(w_temp.data()); //Send to host
 		std::reverse(w_temp.begin(), w_temp.end());
 		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
+		Matrix<float>sigma(w.rows(), 1);
+		sigma.copy(w_temp.data());
 
 		//Get U matrix
-		Matrix<float>U(X.columns(), X.columns());
-		calculate_u(X, Qt, w, U, context);
+		Matrix<float>U(X.rows(), X.rows());
+		Matrix<float>QReversed(Q.rows(), Q.columns());
+		col_reverse_q(Q, QReversed, context);
+		calculate_u(X, QReversed, sigma, U, context);
 		U.copy_to_host(_U); //Send to host
+
+		//Explained variance (WIP)
+		Matrix<float>ExplainedVar(w.rows(), 1);
+		multiply(U, sigma, ExplainedVar, context, false, false, 1.0f);
 
 		}
 		catch (std::exception e)

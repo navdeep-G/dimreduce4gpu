@@ -2,6 +2,8 @@ from tsvd import truncated_svd
 import numpy as np
 import time
 from sklearn.decomposition import TruncatedSVD
+from scipy.sparse.linalg import svds
+from sklearn.utils.extmath import svd_flip
 
 #Exact scikit impl
 svd = TruncatedSVD(algorithm = "arpack", n_components=2, random_state=42, n_iter=1)
@@ -28,6 +30,16 @@ print(trunc.U)
 print("Original X Matrix")
 print(trunc.X)
 
+
+U, Sigma, VT = svds(X, k=2, tol=0)
+# svds doesn't abide by scipy.linalg.svd/randomized_svd
+# conventions, so reverse its outputs.
+U, VT = svd_flip(U[:, ::-1], VT[::-1])
+print("sklearn U")
+print(U)
+print("Sklearn vt")
+print(VT)
+
 print("Sklearn")
 start_sk = time.time()
 svd.fit(X)
@@ -37,3 +49,5 @@ print("Singular Values")
 print(svd.singular_values_)
 print("Components (V^T)")
 print(svd.components_)
+print("Explained Var")
+print(svd.explained_variance_)
