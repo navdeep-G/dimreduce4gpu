@@ -39,6 +39,8 @@ print("sklearn U")
 print(U)
 print("Sklearn vt")
 print(VT)
+print("Sklearn sigma")
+print(Sigma)
 
 print("Sklearn")
 start_sk = time.time()
