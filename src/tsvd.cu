@@ -11,6 +11,31 @@
 namespace tsvd
 {
 
+void square_val(const Matrix<float> &UmultSigma, Matrix<float> &UmultSigmaSquare, DeviceContext &context){
+	auto n = UmultSigma.columns();
+	auto m = UmultSigma.rows();
+	auto k = UmultSigmaSquare.rows();
+	auto d_u_mult_sigma = UmultSigma.data();
+	auto d_u_mult_sigma_square = UmultSigmaSquare.data();
+	auto counting = thrust::make_counting_iterator <int>(0);
+	thrust::for_each(counting, counting+UmultSigmaSquare.size(), [=]__device__(int idx){
+		float square_val = std::pow(d_u_mult_sigma[idx],2);
+		d_u_mult_sigma_square[idx] = square_val;
+	} );
+}
+
+void calc_var(Matrix<float> &UmultSigmaSumOfSquare, const Matrix<float> &UmultSigmaSumSquare, Matrix<float> &UmultSigmaVarNum, Matrix<float> &UmultSigmaVar, tsvd_float n, DeviceContext &context){
+	multiply(UmultSigmaSumOfSquare, n, context);
+	subtract(UmultSigmaSumOfSquare, UmultSigmaSumSquare, UmultSigmaVarNum, context);
+	auto d_u_sigma_var_num = UmultSigmaVarNum.data();
+	auto d_u_sigma_var = UmultSigmaVar.data();
+	auto counting = thrust::make_counting_iterator <int>(0);
+	thrust::for_each(counting, counting+UmultSigmaVar.size(), [=]__device__(int idx){
+		float div_val = d_u_sigma_var_num[idx]/16.0f;
+		d_u_sigma_var[idx] = div_val;
+	} );
+}
+
 void col_reverse_q(const Matrix<float> &Q, Matrix<float> &QReversed, DeviceContext &context){
 	auto n = Q.columns();
 	auto m = Q.rows();
@@ -29,7 +54,6 @@ void col_reverse_q(const Matrix<float> &Q, Matrix<float> &QReversed, DeviceConte
 
 // Truncated Q to k vectors (truncated svd)
 void row_reverse_trunc_q(const Matrix<float> &Qt, Matrix<float> &QtTrunc, DeviceContext &context){
-
 	auto m = Qt.rows();
 	auto k = QtTrunc.rows();
 	auto d_q = Qt.data();
@@ -48,7 +72,6 @@ void row_reverse_trunc_q(const Matrix<float> &Qt, Matrix<float> &QtTrunc, Device
 // Calculate U, which is:
 // U = A*V/sigma where A is our X Matrix, V is Q, and sigma is 1/w_i
 void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<float> &w, Matrix<float> &U, DeviceContext &context){
-
 	multiply(X, Q, U, context, false, false, 1.0f); //A*V
 	auto d_u = U.data();
 	auto d_sigma = w.data();
@@ -67,7 +90,7 @@ void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<fl
 
 }
 
-void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params _param)
+void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, params _param)
 {
 	try
 	{
@@ -119,11 +142,29 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		calculate_u(X, QReversed, sigma, U, context);
 		U.copy_to_host(_U); //Send to host
 
-		//Explained variance (WIP)
+		//Explained Variance (WIP)
 		Matrix<float>UmultSigma(U.rows(), U.columns());
+		//U * Sigma
 		multiply_diag(U, sigma, UmultSigma, context, false);
-		//printf("U * Sigma\n");
-		//UmultSigma.print();
+		//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
+		Matrix<float>UmultOnes(UmultSigma.rows(), 1);
+		UmultOnes.fill(1.0f);
+		//Multiply based on prevous and get sums per column (1st rows is 1st column, etc...)
+		Matrix<float>UmultSigmaSquare(UmultSigma.rows(), UmultSigma.columns());
+		Matrix<float>UmultSigmaSum(_param.k, 1);
+		Matrix<float>UmultSigmaSumSquare(_param.k, 1);
+		Matrix<float>UmultSigmaSumOfSquare(_param.k, 1);
+
+		//Calculate Variance
+		square_val(UmultSigma, UmultSigmaSquare, context);
+		multiply(UmultSigmaSquare, UmultOnes, UmultSigmaSumOfSquare, context, true, false, 1.0f);
+		multiply(UmultSigma, UmultOnes, UmultSigmaSum, context, true, false, 1.0f);
+		square_val(UmultSigmaSum, UmultSigmaSumSquare, context);
+		Matrix<float>UmultSigmaVarNum(_param.k, 1);
+		Matrix<float>UmultSigmaVar(_param.k, 1);
+		auto m = UmultSigma.rows();
+		calc_var(UmultSigmaSumOfSquare, UmultSigmaSumSquare, UmultSigmaVarNum, UmultSigmaVar, m, context);
+		UmultSigmaVar.copy_to_host(_explained_variance);
 
 		}
 		catch (std::exception e)

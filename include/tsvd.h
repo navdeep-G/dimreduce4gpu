@@ -29,6 +29,6 @@ namespace tsvd
 		 * \param 		  	_param
 		 */
 
-		tsvd_export void truncated_svd(const double * _X, double * _Q, double * _w, double* _U, params _param);
+		tsvd_export void truncated_svd(const double * _X, double * _Q, double * _w, double* _U, double* _explained_variance, params _param);
 	}
 }

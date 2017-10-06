@@ -13,18 +13,20 @@ class TruncatedSVD(object):
         Q = np.empty((self.n_components, X.shape[1]), dtype=np.float64, order='F')
         U = np.empty((X.shape[0], self.n_components), dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
+        explained_variance = np.empty(self.n_components, dtype=np.float64);
         param = params()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
 
         _tsvd_code = _load_tsvd_lib()
-        _tsvd_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), param)
+        _tsvd_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(explained_variance), param)
 
         self._Q = Q
         self._w = w
         self._U = U
         self._X = X
+        self.explained_variance = explained_variance
 
         return self
 
@@ -43,6 +45,10 @@ class TruncatedSVD(object):
     @property
     def U(self):
         return self._U
+
+    @property
+    def explained_variance_(self):
+        return self.explained_variance
 
 def _as_fptr(x):
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))

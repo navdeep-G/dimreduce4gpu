@@ -27,6 +27,6 @@ def _load_tsvd_lib():
         pass
     _mod = ctypes.cdll.LoadLibrary(lib_path[0])
     _tsvd_code = _mod.truncated_svd
-    _tsvd_code.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), params]
+    _tsvd_code.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), params]
 
     return _tsvd_code
