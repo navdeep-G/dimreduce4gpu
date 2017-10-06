@@ -10,7 +10,7 @@ namespace tsvd
 		int m = C.rows();
 		int n = C.columns();
 		int lda = m;
-		int incx = 1;
+		int incx = 1; //Review what this should be...
 		int ldc = m;
 
 		safe_cublas(cublasSdgmm(context.cublas_handle, mode, m, n, A.data(), lda, B.data(), incx, C.data(), ldc));
