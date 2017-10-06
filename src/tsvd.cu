@@ -122,8 +122,8 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		//Explained variance (WIP)
 		Matrix<float>UmultSigma(U.rows(), U.columns());
 		multiply_diag(U, sigma, UmultSigma, context, false);
-		printf("U * Sigma\n");
-		UmultSigma.print();
+		//printf("U * Sigma\n");
+		//UmultSigma.print();
 
 		}
 		catch (std::exception e)
