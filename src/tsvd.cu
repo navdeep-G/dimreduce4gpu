@@ -142,26 +142,26 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		calculate_u(X, QReversed, sigma, U, context);
 		U.copy_to_host(_U); //Send to host
 
-		//Explained Variance (WIP)
+		//Explained Variance
 		Matrix<float>UmultSigma(U.rows(), U.columns());
 		//U * Sigma
 		multiply_diag(U, sigma, UmultSigma, context, false);
 		//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
 		Matrix<float>UmultOnes(UmultSigma.rows(), 1);
 		UmultOnes.fill(1.0f);
-		//Multiply based on prevous and get sums per column (1st rows is 1st column, etc...)
+		//Allocate matrices for variance calculation
 		Matrix<float>UmultSigmaSquare(UmultSigma.rows(), UmultSigma.columns());
 		Matrix<float>UmultSigmaSum(_param.k, 1);
 		Matrix<float>UmultSigmaSumSquare(_param.k, 1);
 		Matrix<float>UmultSigmaSumOfSquare(_param.k, 1);
+		Matrix<float>UmultSigmaVarNum(_param.k, 1);
+		Matrix<float>UmultSigmaVar(_param.k, 1);
 
 		//Calculate Variance
 		square_val(UmultSigma, UmultSigmaSquare, context);
 		multiply(UmultSigmaSquare, UmultOnes, UmultSigmaSumOfSquare, context, true, false, 1.0f);
 		multiply(UmultSigma, UmultOnes, UmultSigmaSum, context, true, false, 1.0f);
 		square_val(UmultSigmaSum, UmultSigmaSumSquare, context);
-		Matrix<float>UmultSigmaVarNum(_param.k, 1);
-		Matrix<float>UmultSigmaVar(_param.k, 1);
 		auto m = UmultSigma.rows();
 		calc_var(UmultSigmaSumOfSquare, UmultSigmaSumSquare, UmultSigmaVarNum, UmultSigmaVar, m, context);
 		UmultSigmaVar.copy_to_host(_explained_variance);
