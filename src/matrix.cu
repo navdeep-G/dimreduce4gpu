@@ -3,6 +3,18 @@
 
 namespace tsvd
 {
+	void multiply_diag(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool left_diag)
+	{
+		cublasSideMode_t mode = left_diag ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT;
+
+		int m = C.rows();
+		int n = C.columns();
+		int lda = m;
+		int incx = 1;
+		int ldc = m;
+
+		safe_cublas(cublasSdgmm(context.cublas_handle, mode, m, n, A.data(), lda, B.data(), incx, C.data(), ldc));
+	}
 
 	void multiply(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool transpose_a, bool transpose_b, tsvd_float alpha)
 	{

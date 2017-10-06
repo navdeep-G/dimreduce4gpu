@@ -29,11 +29,15 @@ print("U matrix")
 print(trunc.U)
 print("Original X Matrix")
 print(trunc.X)
-
+print("U * Sigma tsvd")
+x_tsvd_transformed = trunc.U * trunc.singular_values_
+print(x_tsvd_transformed)
+print(np.var(x_tsvd_transformed, axis=0))
 
 U, Sigma, VT = svds(X, k=2, tol=0)
 # svds doesn't abide by scipy.linalg.svd/randomized_svd
 # conventions, so reverse its outputs.
+Sigma = Sigma[::-1]
 U, VT = svd_flip(U[:, ::-1], VT[::-1])
 print("sklearn U")
 print(U)
@@ -41,6 +45,11 @@ print("Sklearn vt")
 print(VT)
 print("Sklearn sigma")
 print(Sigma)
+print("U * Sigma")
+X_transformed = U * Sigma
+print(X_transformed)
+print(np.var(X_transformed, axis=0))
+
 
 print("Sklearn")
 start_sk = time.time()

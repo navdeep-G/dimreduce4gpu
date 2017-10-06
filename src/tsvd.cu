@@ -109,19 +109,21 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, params 
 		w.copy_to_host(w_temp.data()); //Send to host
 		std::reverse(w_temp.begin(), w_temp.end());
 		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
-		Matrix<float>sigma(w.rows(), 1);
+		Matrix<float>sigma(_param.k, 1);
 		sigma.copy(w_temp.data());
 
 		//Get U matrix
-		Matrix<float>U(X.rows(), X.rows());
+		Matrix<float>U(X.rows(), _param.k);
 		Matrix<float>QReversed(Q.rows(), Q.columns());
 		col_reverse_q(Q, QReversed, context);
 		calculate_u(X, QReversed, sigma, U, context);
 		U.copy_to_host(_U); //Send to host
 
 		//Explained variance (WIP)
-		Matrix<float>ExplainedVar(w.rows(), 1);
-		multiply(U, sigma, ExplainedVar, context, false, false, 1.0f);
+		Matrix<float>UmultSigma(U.rows(), U.columns());
+		multiply_diag(U, sigma, UmultSigma, context, false);
+		printf("U * Sigma\n");
+		UmultSigma.print();
 
 		}
 		catch (std::exception e)
