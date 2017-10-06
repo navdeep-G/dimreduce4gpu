@@ -31,7 +31,7 @@ void calc_var(Matrix<float> &UmultSigmaSumOfSquare, const Matrix<float> &UmultSi
 	auto d_u_sigma_var = UmultSigmaVar.data();
 	auto counting = thrust::make_counting_iterator <int>(0);
 	thrust::for_each(counting, counting+UmultSigmaVar.size(), [=]__device__(int idx){
-		float div_val = d_u_sigma_var_num[idx]/16.0f;
+		float div_val = d_u_sigma_var_num[idx]/(std::pow(n,2));
 		d_u_sigma_var[idx] = div_val;
 	} );
 }
