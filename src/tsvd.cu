@@ -24,14 +24,32 @@ void square_val(const Matrix<float> &UmultSigma, Matrix<float> &UmultSigmaSquare
 	} );
 }
 
-void calc_var(Matrix<float> &UmultSigmaSumOfSquare, const Matrix<float> &UmultSigmaSumSquare, Matrix<float> &UmultSigmaVarNum, Matrix<float> &UmultSigmaVar, tsvd_float n, DeviceContext &context){
-	multiply(UmultSigmaSumOfSquare, n, context);
+void calc_var(const Matrix<float>UmultSigma, Matrix<float> &UmultSigmaVar, int k, DeviceContext &context){
+	//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
+	Matrix<float>UmultOnes(UmultSigma.rows(), 1);
+	UmultOnes.fill(1.0f);
+
+	//Allocate matrices for variance calculation
+	Matrix<float>UmultSigmaSquare(UmultSigma.rows(), UmultSigma.columns());
+	Matrix<float>UmultSigmaSum(k, 1);
+	Matrix<float>UmultSigmaSumSquare(k, 1);
+	Matrix<float>UmultSigmaSumOfSquare(k, 1);
+	Matrix<float>UmultSigmaVarNum(k, 1);
+
+	//Calculate Variance
+	square_val(UmultSigma, UmultSigmaSquare, context);
+	multiply(UmultSigmaSquare, UmultOnes, UmultSigmaSumOfSquare, context, true, false, 1.0f);
+	multiply(UmultSigma, UmultOnes, UmultSigmaSum, context, true, false, 1.0f);
+	square_val(UmultSigmaSum, UmultSigmaSumSquare, context);
+	//Get rows
+	auto m = UmultSigma.rows();
+	multiply(UmultSigmaSumOfSquare, m, context);
 	subtract(UmultSigmaSumOfSquare, UmultSigmaSumSquare, UmultSigmaVarNum, context);
 	auto d_u_sigma_var_num = UmultSigmaVarNum.data();
 	auto d_u_sigma_var = UmultSigmaVar.data();
 	auto counting = thrust::make_counting_iterator <int>(0);
 	thrust::for_each(counting, counting+UmultSigmaVar.size(), [=]__device__(int idx){
-		float div_val = d_u_sigma_var_num[idx]/(std::pow(n,2));
+		float div_val = d_u_sigma_var_num[idx]/(std::pow(m,2));
 		d_u_sigma_var[idx] = div_val;
 	} );
 }
@@ -146,24 +164,8 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		Matrix<float>UmultSigma(U.rows(), U.columns());
 		//U * Sigma
 		multiply_diag(U, sigma, UmultSigma, context, false);
-		//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
-		Matrix<float>UmultOnes(UmultSigma.rows(), 1);
-		UmultOnes.fill(1.0f);
-		//Allocate matrices for variance calculation
-		Matrix<float>UmultSigmaSquare(UmultSigma.rows(), UmultSigma.columns());
-		Matrix<float>UmultSigmaSum(_param.k, 1);
-		Matrix<float>UmultSigmaSumSquare(_param.k, 1);
-		Matrix<float>UmultSigmaSumOfSquare(_param.k, 1);
-		Matrix<float>UmultSigmaVarNum(_param.k, 1);
 		Matrix<float>UmultSigmaVar(_param.k, 1);
-
-		//Calculate Variance
-		square_val(UmultSigma, UmultSigmaSquare, context);
-		multiply(UmultSigmaSquare, UmultOnes, UmultSigmaSumOfSquare, context, true, false, 1.0f);
-		multiply(UmultSigma, UmultOnes, UmultSigmaSum, context, true, false, 1.0f);
-		square_val(UmultSigmaSum, UmultSigmaSumSquare, context);
-		auto m = UmultSigma.rows();
-		calc_var(UmultSigmaSumOfSquare, UmultSigmaSumSquare, UmultSigmaVarNum, UmultSigmaVar, m, context);
+		calc_var(UmultSigma, UmultSigmaVar, _param.k, context);
 		UmultSigmaVar.copy_to_host(_explained_variance);
 
 		}
