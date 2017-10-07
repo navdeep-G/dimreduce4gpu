@@ -11,6 +11,17 @@
 namespace tsvd
 {
 
+void divide(const Matrix<float> &XVar, const Matrix<float> &XVarSum, Matrix<float> &ExplainedVarRatio, DeviceContext &context){
+	auto d_x_var = XVar.data();
+	auto d_x_var_sum = XVarSum.data();
+	auto d_expl_var_ratio = ExplainedVarRatio.data();
+	auto counting = thrust::make_counting_iterator <int>(0);
+	thrust::for_each(counting, counting+ExplainedVarRatio.size(), [=]__device__(int idx){
+		float div_val = d_x_var[idx] / d_x_var_sum[0];
+		d_expl_var_ratio[idx] = div_val;
+	} );
+}
+
 void square_val(const Matrix<float> &UmultSigma, Matrix<float> &UmultSigmaSquare, DeviceContext &context){
 	auto n = UmultSigma.columns();
 	auto m = UmultSigma.rows();
@@ -108,7 +119,7 @@ void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<fl
 
 }
 
-void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, params _param)
+void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
 	try
 	{
@@ -167,6 +178,18 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		Matrix<float>UmultSigmaVar(_param.k, 1);
 		calc_var(UmultSigma, UmultSigmaVar, _param.k, context);
 		UmultSigmaVar.copy_to_host(_explained_variance);
+
+		//Explained Variance Ratio
+		//Set aside matrix of 1's for getting sum of columnar variances
+		Matrix<float>XmultOnes(X.rows(), 1);
+		XmultOnes.fill(1.0f);
+		Matrix<float>XVar(1, X.columns());
+		calc_var(X, XVar, X.columns(), context);
+		Matrix<float>XVarSum(1,1);
+		multiply(XVar, XmultOnes, XVarSum, context, false, false, 1.0f);
+		Matrix<float>ExplainedVarRatio(_param.k, 1);
+		divide(UmultSigmaVar, XVarSum, ExplainedVarRatio, context);
+		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
 
 		}
 		catch (std::exception e)
