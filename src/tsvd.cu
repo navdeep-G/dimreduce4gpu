@@ -126,73 +126,73 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		//Take in X matrix and allocate for X^TX
 		Matrix<float>X(_param.X_m, _param.X_n);
 		X.copy(_X);
-		Matrix<float>XtX(_param.X_n, _param.X_n);
+		//Matrix<float>XtX(_param.X_n, _param.X_n);
 
 		//create context
 		DeviceContext context;
 
 		//Multiplye X and Xt and output result to XtX
-		multiply(X, X, XtX, context, true, false, 1.0f);
+		//multiply(X, X, XtX, context, true, false, 1.0f);
 
-		//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
-		Matrix<float>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
-		Matrix<float>w(Q.rows(), 1);
-		calculate_eigen_pairs_exact(XtX, Q, w, context);
+//		//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
+//		Matrix<float>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
+//		Matrix<float>w(Q.rows(), 1);
+//		calculate_eigen_pairs_exact(XtX, Q, w, context);
+//
+//		//Obtain Q^T to obtain vector as row major order
+//		Matrix<float>Qt(Q.columns(), Q.rows());
+//		transpose(Q, Qt, context); //Needed for calculate_u()
+//		Matrix<float>QtTrunc(_param.k, Qt.columns());
+//		row_reverse_trunc_q(Qt, QtTrunc, context);
+//		QtTrunc.copy_to_host(_Q); //Send to host
+//
+//		//Obtain square root of eigenvalues, which are singular values
+//		w.transform([=]__device__(float elem){
+//			if(elem > 0.0){
+//				return std::sqrt(elem);
+//			}else{
+//				return 0.0f;
+//			}
+//		}
+//		);
+//
+//		//Sort from biggest singular value to smallest
+//		std::vector<double> w_temp(w.size());
+//		w.copy_to_host(w_temp.data()); //Send to host
+//		std::reverse(w_temp.begin(), w_temp.end());
+//		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
+//		Matrix<float>sigma(_param.k, 1);
+//		sigma.copy(w_temp.data());
+//
+//		//Get U matrix
+//		Matrix<float>U(X.rows(), _param.k);
+//		Matrix<float>QReversed(Q.rows(), Q.columns());
+//		col_reverse_q(Q, QReversed, context);
+//		calculate_u(X, QReversed, sigma, U, context);
+//		U.copy_to_host(_U); //Send to host
+//
+//		//Explained Variance
+//		Matrix<float>UmultSigma(U.rows(), U.columns());
+//		//U * Sigma
+//		multiply_diag(U, sigma, UmultSigma, context, false);
+//		Matrix<float>UmultSigmaVar(_param.k, 1);
+//		calc_var(UmultSigma, UmultSigmaVar, _param.k, context);
+//		UmultSigmaVar.copy_to_host(_explained_variance);
+//
+//		//Explained Variance Ratio
+//		//Set aside matrix of 1's for getting sum of columnar variances
+//		Matrix<float>XmultOnes(X.rows(), 1);
+//		XmultOnes.fill(1.0f);
+//		Matrix<float>XVar(1, X.columns());
+//		calc_var(X, XVar, X.columns(), context);
+//		Matrix<float>XVarSum(1,1);
+//		multiply(XVar, XmultOnes, XVarSum, context, false, false, 1.0f);
+//		Matrix<float>ExplainedVarRatio(_param.k, 1);
+//		divide(UmultSigmaVar, XVarSum, ExplainedVarRatio, context);
+//		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
 
-		//Obtain Q^T to obtain vector as row major order
-		Matrix<float>Qt(Q.columns(), Q.rows());
-		transpose(Q, Qt, context); //Needed for calculate_u()
-		Matrix<float>QtTrunc(_param.k, Qt.columns());
-		row_reverse_trunc_q(Qt, QtTrunc, context);
-		QtTrunc.copy_to_host(_Q); //Send to host
-
-		//Obtain square root of eigenvalues, which are singular values
-		w.transform([=]__device__(float elem){
-			if(elem > 0.0){
-				return std::sqrt(elem);
-			}else{
-				return 0.0f;
-			}
 		}
-		);
-
-		//Sort from biggest singular value to smallest
-		std::vector<double> w_temp(w.size());
-		w.copy_to_host(w_temp.data()); //Send to host
-		std::reverse(w_temp.begin(), w_temp.end());
-		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
-		Matrix<float>sigma(_param.k, 1);
-		sigma.copy(w_temp.data());
-
-		//Get U matrix
-		Matrix<float>U(X.rows(), _param.k);
-		Matrix<float>QReversed(Q.rows(), Q.columns());
-		col_reverse_q(Q, QReversed, context);
-		calculate_u(X, QReversed, sigma, U, context);
-		U.copy_to_host(_U); //Send to host
-
-		//Explained Variance
-		Matrix<float>UmultSigma(U.rows(), U.columns());
-		//U * Sigma
-		multiply_diag(U, sigma, UmultSigma, context, false);
-		Matrix<float>UmultSigmaVar(_param.k, 1);
-		calc_var(UmultSigma, UmultSigmaVar, _param.k, context);
-		UmultSigmaVar.copy_to_host(_explained_variance);
-
-		//Explained Variance Ratio
-		//Set aside matrix of 1's for getting sum of columnar variances
-		Matrix<float>XmultOnes(X.rows(), 1);
-		XmultOnes.fill(1.0f);
-		Matrix<float>XVar(1, X.columns());
-		calc_var(X, XVar, X.columns(), context);
-		Matrix<float>XVarSum(1,1);
-		multiply(XVar, XmultOnes, XVarSum, context, false, false, 1.0f);
-		Matrix<float>ExplainedVarRatio(_param.k, 1);
-		divide(UmultSigmaVar, XVarSum, ExplainedVarRatio, context);
-		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
-
-		}
-		catch (std::exception e)
+		catch (const std::exception &e)
 		{
 			std::cerr << "tsvd error: " << e.what() << "\n";
 		}

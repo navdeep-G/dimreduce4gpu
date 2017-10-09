@@ -17,8 +17,8 @@ namespace tsvd
 	template <typename T>
 	class Matrix
 	{
-		int _m;
-		int _n;
+		size_t _m;
+		size_t _n;
 
 		T* _data;
 
@@ -36,7 +36,7 @@ namespace tsvd
 		}
 
 		/**
-		 * \fn	Matrix(int m, int n)
+		 * \fn	Matrix(size_t m, size_t n)
 		 *
 		 * \brief	Constructor. Initialize tsvdrix with m rows and n columns in device memory.
 		 *
@@ -44,7 +44,7 @@ namespace tsvd
 		 * \param	n	Matrix columns.
 		 */
 
-		Matrix(int m, int n) : _m(m), _n(n)
+		Matrix(size_t m, size_t n) : _m(m), _n(n)
 		{
 			safe_cuda(cudaMalloc(&_data, _n*_m* sizeof(T)));
 		}
@@ -69,7 +69,7 @@ namespace tsvd
 		}
 
 		/**
-		 * \fn	void resize(int m, int n)
+		 * \fn	void resize(size_t m, size_t n)
 		 *
 		 * \brief	Resizes.
 		 *
@@ -77,7 +77,7 @@ namespace tsvd
 		 * \param	n	Matrix columns.
 		 */
 
-		void resize(int m, int n)
+		void resize(size_t m, size_t n)
 		{
 			_m = m;
 			_n = n;
@@ -140,34 +140,34 @@ namespace tsvd
 		}
 
 		/**
-		 * \fn	int rows() const
+		 * \fn	size_t rows() const
 		 *
 		 * \return	Number of tsvdrix rows.
 		 */
 
-		int rows() const
+		size_t rows() const
 		{
 			return _m;
 		}
 
 		/**
-		 * \fn	int columns() const
+		 * \fn	size_t columns() const
 		 *
 		 * \return	Number of tsvdrix columns.
 		 */
 
-		int columns() const
+		size_t columns() const
 		{
 			return _n;
 		}
 
 		/**
-		 * \fn	int size() const
+		 * \fn	size_t size() const
 		 *
 		 * \return Number of tsvdrix elements (m*n).
 		 */
 
-		int size() const
+		size_t size() const
 		{
 			return _n * _m;
 		}
@@ -254,7 +254,12 @@ namespace tsvd
 		template <typename HostT>
 		void copy(const HostT* hptr)
 		{
-			thrust::copy(hptr, hptr + this->size(), this->dptr());
+			if(std::is_same<HostT, T>::value){
+				thrust::copy(hptr, hptr + this->size(), this->dptr());
+			}else{
+				std::vector<T> temp(hptr, hptr + this->size());
+				thrust::copy(temp.begin(), temp.end(), this->dptr());
+			}
 		}
 
 		/**
@@ -275,9 +280,9 @@ namespace tsvd
 		void print() const
 		{
 			thrust::host_vector<T> h_tsvd(thrust::device_ptr<T>(_data), thrust::device_ptr<T>(_data + _n * _m));
-			for (int i = 0; i < _m; i++)
+			for (auto i = 0; i < _m; i++)
 			{
-				for (int j = 0; j < _n; j++)
+				for (auto j = 0; j < _n; j++)
 				{
 					printf("%1.2f ", h_tsvd[j * _m + i]);
 				}
