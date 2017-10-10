@@ -7,6 +7,7 @@
 #include <ctime>
 #include <thrust/iterator/counting_iterator.h>
 #include<algorithm>
+#include <thrust/sequence.h>
 
 namespace tsvd
 {
@@ -35,7 +36,7 @@ void square_val(const Matrix<float> &UmultSigma, Matrix<float> &UmultSigmaSquare
 	} );
 }
 
-void calc_var(const Matrix<float>UmultSigma, Matrix<float> &UmultSigmaVar, int k, DeviceContext &context){
+void calc_var(const Matrix<float>UmultSigma, int k, Matrix<float> &UmultSigmaVar, DeviceContext &context){
 	//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
 	Matrix<float>UmultOnes(UmultSigma.rows(), 1);
 	UmultOnes.fill(1.0f);
@@ -65,6 +66,64 @@ void calc_var(const Matrix<float>UmultSigma, Matrix<float> &UmultSigmaVar, int k
 	} );
 }
 
+template<typename T>
+class variance_iterator{
+public:
+    // Required iterator traits
+    typedef variance_iterator<T>          self_type;              ///< My own type
+    typedef size_t                            difference_type;        ///< Type to express the result of subtracting one iterator from another
+    typedef T                           value_type;             ///< The type of the element the iterator can point to
+    typedef T*                          pointer;                ///< The type of a pointer to an element the iterator can point to
+    typedef T                           reference;              ///< The type of a reference to an element the iterator can point to
+    typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
+	const T* data_ptr;
+	const T* mean_ptr;
+	const int col_rows;
+	size_t offset;
+	__device__ T operator[](size_t idx){
+		idx = idx + offset;
+		T mean = mean_ptr[idx/col_rows];
+		T dev_square = pow((data_ptr[idx] - mean),2);
+		return dev_square;
+	}
+	__device__ self_type operator+(size_t idx){
+		self_type retval(data_ptr, mean_ptr, col_rows);
+		retval.offset += idx;
+		return retval;
+	}
+
+	__host__ __device__ variance_iterator(const T* data_ptr, const T* mean_ptr, const int col_rows):data_ptr(data_ptr), mean_ptr(mean_ptr), col_rows(col_rows), offset(0){
+
+	}
+};
+void calc_var_numerator(const Matrix<float> &X, const Matrix<float> &UColMean, Matrix<float> &UVar, DeviceContext &context){
+	auto m = X.rows();
+	variance_iterator<float> variance(X.data(), UColMean.data(), m);
+	thrust::device_vector<int> segments(X.columns() + 1);
+	thrust::sequence(segments.begin(), segments.end(), 0, static_cast<int>(X.rows()));
+	// Determine temporary device storage requirements
+	void     *d_temp_storage = NULL;
+	size_t   temp_storage_bytes = 0;
+	cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
+	    X.columns(), segments.data(), segments.data() + 1);
+	// Allocate temporary storage
+	safe_cuda(cudaMalloc(&d_temp_storage, temp_storage_bytes));
+	// Run sum-reduction
+	cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
+	    X.columns(), segments.data(), segments.data() + 1);
+	safe_cuda(cudaFree(d_temp_storage));
+
+//	auto d_x_mean = UColMean.data();
+//	auto d_x_var = UVar.data();
+//	auto counting = thrust::make_counting_iterator <int>(0);
+//
+//	thrust::for_each(counting, counting+X.size(), [=]__device__(int idx){
+//		int column = idx/m;
+//		numerator = std::pow((d_x[idx] - d_x_mean[column]), 2);
+//		d_x_var[column] = numerator;
+//	} );
+
+}
 void col_reverse_q(const Matrix<float> &Q, Matrix<float> &QReversed, DeviceContext &context){
 	auto n = Q.columns();
 	auto m = Q.rows();
@@ -176,20 +235,32 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		//U * Sigma
 		multiply_diag(U, sigma, UmultSigma, context, false);
 		Matrix<float>UmultSigmaVar(_param.k, 1);
-		calc_var(UmultSigma, UmultSigmaVar, _param.k, context);
+		calc_var(UmultSigma, _param.k, UmultSigmaVar, context);
 		UmultSigmaVar.copy_to_host(_explained_variance);
 
 		//Explained Variance Ratio
 		//Set aside matrix of 1's for getting sum of columnar variances
 		Matrix<float>XmultOnes(X.rows(), 1);
 		XmultOnes.fill(1.0f);
-		Matrix<float>XVar(1, X.columns());
-		calc_var(X, XVar, X.columns(), context);
+		Matrix<float>XVar(X.columns(), 1);
+		Matrix<float>XColMean(X.columns(), 1);
+		multiply(X, XmultOnes, XColMean, context, true, false, 1.0f);
+		float m = X.rows();
+		multiply(XColMean, 1/m, context);
+		calc_var_numerator(X, XColMean, XVar, context);
+		multiply(XVar, 1/m, context);
 		Matrix<float>XVarSum(1,1);
-		multiply(XVar, XmultOnes, XVarSum, context, false, false, 1.0f);
+		multiply(XVar, XmultOnes, XVarSum, context, true, false, 1.0f);
 		Matrix<float>ExplainedVarRatio(_param.k, 1);
 		divide(UmultSigmaVar, XVarSum, ExplainedVarRatio, context);
 		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
+
+//		calc_var(X, X.columns(), XVar, context); //OOM with > 1k columns (tested with 1k and 10k)
+//		Matrix<float>XVarSum(1,1);
+//		multiply(XVar, XmultOnes, XVarSum, context, false, false, 1.0f);
+//		Matrix<float>ExplainedVarRatio(_param.k, 1);
+//		divide(UmultSigmaVar, XVarSum, ExplainedVarRatio, context);
+//		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
 
 		}
 		catch (const std::exception &e)
