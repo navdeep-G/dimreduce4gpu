@@ -234,9 +234,17 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		Matrix<float>UmultSigma(U.rows(), U.columns());
 		//U * Sigma
 		multiply_diag(U, sigma, UmultSigma, context, false);
-		Matrix<float>UmultSigmaVar(_param.k, 1);
-		calc_var(UmultSigma, _param.k, UmultSigmaVar, context);
-		UmultSigmaVar.copy_to_host(_explained_variance);
+
+		Matrix<float>UOnesSigma(UmultSigma.rows(), 1);
+		UOnesSigma.fill(1.0f);
+		Matrix<float>USigmaVar(_param.k, 1);
+		Matrix<float>USigmaColMean(_param.k, 1);
+		multiply(UmultSigma, UOnesSigma, USigmaColMean, context, true, false, 1.0f);
+		float m_usigma = UmultSigma.rows();
+		multiply(USigmaColMean, 1/m_usigma, context);
+		calc_var_numerator(UmultSigma, USigmaColMean, USigmaVar, context);
+		multiply(USigmaVar, 1/m_usigma, context);
+		USigmaVar.copy_to_host(_explained_variance);
 
 		//Explained Variance Ratio
 		//Set aside matrix of 1's for getting sum of columnar variances
@@ -249,10 +257,11 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		multiply(XColMean, 1/m, context);
 		calc_var_numerator(X, XColMean, XVar, context);
 		multiply(XVar, 1/m, context);
+
 		Matrix<float>XVarSum(1,1);
 		multiply(XVar, XmultOnes, XVarSum, context, true, false, 1.0f);
 		Matrix<float>ExplainedVarRatio(_param.k, 1);
-		divide(UmultSigmaVar, XVarSum, ExplainedVarRatio, context);
+		divide(USigmaVar, XVarSum, ExplainedVarRatio, context);
 		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
 
 //		calc_var(X, X.columns(), XVar, context); //OOM with > 1k columns (tested with 1k and 10k)
