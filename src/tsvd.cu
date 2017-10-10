@@ -113,16 +113,6 @@ void calc_var_numerator(const Matrix<float> &X, const Matrix<float> &UColMean, M
 	    X.columns(), segments.data(), segments.data() + 1);
 	safe_cuda(cudaFree(d_temp_storage));
 
-//	auto d_x_mean = UColMean.data();
-//	auto d_x_var = UVar.data();
-//	auto counting = thrust::make_counting_iterator <int>(0);
-//
-//	thrust::for_each(counting, counting+X.size(), [=]__device__(int idx){
-//		int column = idx/m;
-//		numerator = std::pow((d_x[idx] - d_x_mean[column]), 2);
-//		d_x_var[column] = numerator;
-//	} );
-
 }
 void col_reverse_q(const Matrix<float> &Q, Matrix<float> &QReversed, DeviceContext &context){
 	auto n = Q.columns();
@@ -263,13 +253,6 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		Matrix<float>ExplainedVarRatio(_param.k, 1);
 		divide(USigmaVar, XVarSum, ExplainedVarRatio, context);
 		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
-
-//		calc_var(X, X.columns(), XVar, context); //OOM with > 1k columns (tested with 1k and 10k)
-//		Matrix<float>XVarSum(1,1);
-//		multiply(XVar, XmultOnes, XVarSum, context, false, false, 1.0f);
-//		Matrix<float>ExplainedVarRatio(_param.k, 1);
-//		divide(UmultSigmaVar, XVarSum, ExplainedVarRatio, context);
-//		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
 
 		}
 		catch (const std::exception &e)
