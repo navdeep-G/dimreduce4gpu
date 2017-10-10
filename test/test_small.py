@@ -8,7 +8,7 @@ from sklearn.utils.extmath import svd_flip
 #Randomized scikit impl
 #svd = TruncatedSVD(algorithm = "randomized", n_components=99, random_state=42, n_iter=5, tol=0.0)
 X = np.array([[1, 2, 3], [4, 5, 6], [7,8,9], [10,11,12]], np.float32)
-#X = np.random.rand(1000,100)
+#X = np.random.rand(5000000,10)
 k = 2
 
 #Exact scikit impl
@@ -17,7 +17,6 @@ svd = TruncatedSVD(algorithm = "arpack", n_components=k, random_state=42)
 print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix")
 print("Original X Matrix")
 print(X)
-
 print("\n")
 print("tsvd run")
 start_time = time.time()

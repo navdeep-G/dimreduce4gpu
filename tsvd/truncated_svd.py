@@ -5,8 +5,9 @@ from .lib_tsvd import params
 
 class TruncatedSVD(object):
 
-    def __init__(self, n_components=2):
+    def __init__(self, n_components=2, algorithm = "arpack"):
         self.n_components = n_components
+        self.algorithm = algorithm
 
     def fit(self, X):
         X = np.asfortranarray(X, dtype=np.float64)
@@ -19,6 +20,7 @@ class TruncatedSVD(object):
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
+        param.algorithm = self.algorithm.encode('utf-8')
 
         _tsvd_code = _load_tsvd_lib()
         _tsvd_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(explained_variance), _as_fptr(explained_variance_ratio), param)

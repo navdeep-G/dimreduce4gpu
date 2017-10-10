@@ -3,7 +3,8 @@ import os, sys, ctypes
 class params(ctypes.Structure):
     _fields_  = [('X_n', ctypes.c_int),
                 ('X_m', ctypes.c_int),
-                ('k', ctypes.c_int)]
+                ('k', ctypes.c_int),
+                ('algorithm', ctypes.c_char_p)]
 
 def _load_tsvd_lib():
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
