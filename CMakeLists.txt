@@ -1,6 +1,6 @@
 
 cmake_minimum_required (VERSION 3.5)
-project(SparseCodingLibrary)
+project(truncatedSVD)
 find_package(OpenMP)
 find_package(CUDA QUIET REQUIRED)
 
