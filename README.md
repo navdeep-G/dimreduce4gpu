@@ -1,3 +1,3 @@
 # truncatedSvd
 
-Truncated SVD in CUDA
+Truncated SVD written in CUDA
