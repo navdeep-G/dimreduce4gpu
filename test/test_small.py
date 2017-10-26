@@ -20,7 +20,7 @@ print(X)
 print("\n")
 print("tsvd run")
 start_time = time.time()
-trunc = truncated_svd.TruncatedSVD(n_components=k) #Not really using k yet...
+trunc = truncated_svd.TruncatedSVD(n_components=k)
 trunc.fit(X)
 end_time = time.time() - start_time
 print("Total time for tsvd is " + str(end_time))
