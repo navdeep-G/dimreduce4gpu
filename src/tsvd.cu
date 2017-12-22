@@ -429,32 +429,27 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 {
     Matrix<float>X(_param.X_m, _param.X_n);
     X.copy(_X);
-    truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
-}
-
-void truncated_svd_matrix(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
-{
-        std::string algorithm(_param.algorithm);
-        try
+    std::string algorithm(_param.algorithm);
+    try
         {
-                if(algorithm == "cusolver"){
-                                cusolver_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
-                        } else {
-                                power_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
-                        }
-                }
-                catch (const std::exception &e)
-                {
-                        std::cerr << "tsvd error: " << e.what() << "\n";
-                }
-                catch (std::string e)
-                {
-                        std::cerr << "tsvd error: " << e << "\n";
-                }
-                catch (...)
-                {
-                        std::cerr << "tsvd error\n";
-                }
-}
+           if(algorithm == "cusolver"){
+                 cusolver_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
+           } else {
+                 power_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
+           }
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << "tsvd error: " << e.what() << "\n";
+	}
+	catch (std::string e)
+	{
+		std::cerr << "tsvd error: " << e << "\n";
+	}
+	catch (...)
+	{
+		std::cerr << "tsvd error\n";
+	}	
+    }
 
 }
