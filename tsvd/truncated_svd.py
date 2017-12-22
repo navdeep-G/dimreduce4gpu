@@ -11,12 +11,21 @@ class TruncatedSVD(object):
     estimator does not center the data before computing the singular value
     decomposition.
 
-    :param: n_components Desired dimensionality of output data
+    :param: int n_components: Desired dimensionality of output data
+
+    :param: str algorithm: SVD solver to use.
+                           Either “cusolver” (similar to ARPACK)
+                           or “power” for the power method.
+
+    :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
+                       Should be > 0.0 to ensure convergence.
 
     """
 
-    def __init__(self, n_components=2):
+    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5):
         self.n_components = n_components
+        self.algorithm = algorithm
+        self.tol = tol
 
     def fit(self, X):
         """Fit Truncated SVD on matrix X.
@@ -43,16 +52,23 @@ class TruncatedSVD(object):
 
         """
         X = np.asfortranarray(X, dtype=np.float64)
-        Q = np.empty((self.n_components, X.shape[1]), dtype=np.float64, order='F')
-        U = np.empty((X.shape[0], self.n_components), dtype=np.float64, order='F')
+        Q = np.empty(
+            (self.n_components, X.shape[1]), dtype=np.float64, order='F')
+        U = np.empty(
+            (X.shape[0], self.n_components), dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
-        explained_variance = np.empty(self.n_components, dtype=np.float64);
-        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64);
+        explained_variance = np.empty(self.n_components, dtype=np.float64)
+        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
         param = params()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
+        param.algorithm = self.algorithm.encode('utf-8')
+        param.tol = self.tol
 
+        if param.tol <= 0.0:
+            raise ValueError("The `tol` parameter must be > 0.0")
+	
         _tsvd_code = _load_tsvd_lib()
         _tsvd_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(explained_variance), _as_fptr(explained_variance_ratio), param)
 
