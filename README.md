@@ -10,5 +10,3 @@ SVD & Truncated SVD written in CUDA based on the [cusolverDnSsyevd dense eigenva
 
 `bash run_cmake.sh`
 
-# Benchmarks coming soon...
-
