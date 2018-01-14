@@ -5,9 +5,11 @@ SVD & Truncated SVD written in CUDA based on the following eigenvalue solvers:
  & the [power method](https://en.wikipedia.org/wiki/Power_iteration)
 
 ## Usage in other projects
-* This library is currently the `Truncated SVD` implementation in the [h2o4gpu project](https://github.com/h2oai/h2o4gpu/tree/master), which I actively contribute to.
-    - [Link to Truncated SVD implementation in h2o4gpu](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
-    - This library is also the computational backend for h2o4gpu's [PCA implementation](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca)
+* This library is used in the following projects:
+    * [h2o4gpu](https://github.com/h2oai/h2o4gpu/tree/master)
+        * Usage:
+            * [Truncated SVD](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
+            * [Principal Components Analysis](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca) (Uses Truncated SVD for               most of the computational work)
 
 ## Simple install & test
 
