@@ -1,6 +1,6 @@
 # truncatedSvd
 
-SVD & Truncated SVD written in CUDA based on the following eigenvalue solvers:
+Singular Value Decomposition(SVD) & Truncated SVD written in CUDA based on the following eigenvalue solvers:
 [cusolverDnSsyevd dense eigenvalue solver](http://docs.nvidia.com/cuda/cusolver/index.html#cuds-lt-t-gt-syevd)
  & the [power method](https://en.wikipedia.org/wiki/Power_iteration)
 
