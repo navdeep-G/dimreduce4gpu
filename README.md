@@ -2,7 +2,7 @@
 
 Singular Value Decomposition(SVD) & Truncated SVD written in CUDA based on the following eigenvalue solvers:
 [cusolverDnSsyevd dense eigenvalue solver](http://docs.nvidia.com/cuda/cusolver/index.html#cuds-lt-t-gt-syevd)
- & the [power method](https://en.wikipedia.org/wiki/Power_iteration)
+ and the [power method](https://en.wikipedia.org/wiki/Power_iteration)
 
 ## Usage in other projects
 * This library is used in the following projects:
