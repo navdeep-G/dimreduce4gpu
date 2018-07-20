@@ -4,15 +4,17 @@
 #include <cusparse.h>
 #include <cusolverDn.h>
 
-namespace tsvd
+namespace device
 {
+	using namespace tsvd;
+
 	class DeviceContext
 	{
 	public:
 		cublasHandle_t cublas_handle;
 		cusolverDnHandle_t cusolver_handle;
 		cusparseHandle_t cusparse_handle;
-		CubMemory cub_mem;
+		tsvd::CubMemory cub_mem;
 
 		DeviceContext()
 		{
