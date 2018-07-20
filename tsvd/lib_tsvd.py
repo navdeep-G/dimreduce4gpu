@@ -1,11 +1,16 @@
 import os, sys, ctypes
 
 class params(ctypes.Structure):
-    _fields_  = [('X_n', ctypes.c_int),
+    _fields_ = [('X_n', ctypes.c_int),
                 ('X_m', ctypes.c_int),
                 ('k', ctypes.c_int),
                 ('algorithm', ctypes.c_char_p),
-		('tol', ctypes.c_float)]
+                ('n_iter', ctypes.c_int),
+                ('random_state', ctypes.c_int),
+                ('tol', ctypes.c_float),
+                ('verbose', ctypes.c_int),
+                ('gpu_id', ctypes.c_int),
+                ('whiten', ctypes.c_bool)]
 
 def _load_tsvd_lib():
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
@@ -28,7 +33,14 @@ def _load_tsvd_lib():
     except:
         pass
     _mod = ctypes.cdll.LoadLibrary(lib_path[0])
-    _tsvd_code = _mod.truncated_svd
-    _tsvd_code.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), params]
+    _tsvd_code = _mod.truncated_svd_float
+    _tsvd_code.argtypes = [ctypes.POINTER(ctypes.c_float),
+                           ctypes.POINTER(ctypes.c_float),
+                           ctypes.POINTER(ctypes.c_float),
+                           ctypes.POINTER(ctypes.c_float),
+                           ctypes.POINTER(ctypes.c_float),
+                           ctypes.POINTER(ctypes.c_float),
+                           ctypes.POINTER(ctypes.c_float),
+                           params]
 
     return _tsvd_code
