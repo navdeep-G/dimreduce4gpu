@@ -2,8 +2,6 @@ from tsvd import truncated_svd
 import numpy as np
 import time
 from sklearn.decomposition import TruncatedSVD
-from scipy.sparse.linalg import svds
-from sklearn.utils.extmath import svd_flip
 
 X = np.array([[1, 2, 3], [4, 5, 6], [7,8,9], [10,11,12]], np.float32)
 #X = np.random.rand(5000000,10)
