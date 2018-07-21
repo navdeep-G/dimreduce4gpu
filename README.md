@@ -45,7 +45,7 @@ pip install -r requirements.txt
 bash run_cmake.sh
 ```
 
-## tsvd4gpu usage in other projects
+## `tsvd4gpu` usage in other projects
 * This library (or a variant of it) is used in the following projects:
     * [H2O4GPU](https://github.com/h2oai/h2o4gpu/tree/master)(A collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) )
         * Usage:
