@@ -1,6 +1,6 @@
 # tsvd4gpu
 
-Singular Value Decomposition(SVD) & Truncated SVD written in CUDA based on the following eigenvalue solvers:
+Truncated Singular Value Decomposition (tsvd) written in CUDA (4 GPU) based on the following eigenvalue solvers:
 [cusolverDnSsyevd dense eigenvalue solver](http://docs.nvidia.com/cuda/cusolver/index.html#cuds-lt-t-gt-syevd)
  and the [power method](https://en.wikipedia.org/wiki/Power_iteration)
 
