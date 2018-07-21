@@ -41,8 +41,8 @@ export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
 export CUDADIR=/usr/local/cuda/include/
 ```
-    
-## Setup and test
+
+- To compile everything, install the Python interface, and run a simple test:
 
 ```
 git clone --recursive git@github.com:navdeep-G/tsvd4gpu.git
