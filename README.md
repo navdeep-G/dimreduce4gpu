@@ -46,7 +46,7 @@ bash run_cmake.sh
 ```
 
 ## `tsvd4gpu` usage in other projects
-* This library (or a variant of it) is used in the following projects:
+* This library (or a variant of it) is used in the following open source projects:
     * [H2O4GPU](https://github.com/h2oai/h2o4gpu/tree/master)(A collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) )
         * Usage:
             * [Truncated SVD](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
