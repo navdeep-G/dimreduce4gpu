@@ -50,5 +50,5 @@ bash run_cmake.sh
     * [H2O4GPU](https://github.com/h2oai/h2o4gpu/tree/master)(A collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) )
         * Usage:
             * [Truncated SVD](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
-            * [Principal Components Analysis](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca) (Uses Truncated SVD for most of the computational work)
+            * [Principal Components Analysis](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca) (Uses Truncated SVD for most of the computational work by first centering the `X` matrix and then running SVD on `X`)
 
