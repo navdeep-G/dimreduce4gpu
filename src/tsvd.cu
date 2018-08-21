@@ -14,8 +14,6 @@
 namespace tsvd
 {
 
-	using namespace tsvd;
-
 	/**
 	 * Division utility to get explained variance ratio
 	 *
@@ -295,12 +293,12 @@ namespace tsvd
 
 	void outer_product(matrix::Matrix<float>& A, float eigen_value, const matrix::Matrix<float>& eigen_vector, const matrix::Matrix<float>& eigen_vector_transpose, device::DeviceContext& context)
 	{
-		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
+		util::safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
 	void outer_product(matrix::Matrix<double>& A, double eigen_value, const matrix::Matrix<double>& eigen_vector, const matrix::Matrix<double>& eigen_vector_transpose, device::DeviceContext& context)
 	{
-		safe_cublas(cublasDger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
+		util::safe_cublas(cublasDger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
 	/**
@@ -428,7 +426,7 @@ namespace tsvd
 	 */
 	void truncated_svd_float(const float *_X, float *_Q, float *_w, float *_U, float* _X_transformed, float *_explained_variance, float *_explained_variance_ratio, params _param)
 	{
-		safe_cuda(cudaSetDevice(_param.gpu_id));
+		util::safe_cuda(cudaSetDevice(_param.gpu_id));
 		matrix::Matrix<float>X(_param.X_m, _param.X_n);
 		X.copy(_X);
 		truncated_svd_matrix(X, _Q, _w, _U, _X_transformed, _explained_variance, _explained_variance_ratio, _param);
@@ -447,7 +445,7 @@ namespace tsvd
 	 */
 	void truncated_svd_double(const double *_X, double *_Q, double *_w, double *_U, double* _X_transformed, double *_explained_variance, double *_explained_variance_ratio, params _param)
 	{
-		safe_cuda(cudaSetDevice(_param.gpu_id));
+		util::safe_cuda(cudaSetDevice(_param.gpu_id));
 		matrix::Matrix<double>X(_param.X_m, _param.X_n);
 		X.copy(_X);
 		truncated_svd_matrix(X, _Q, _w, _U, _X_transformed, _explained_variance, _explained_variance_ratio, _param);
