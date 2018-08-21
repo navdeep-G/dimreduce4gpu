@@ -22,7 +22,7 @@ namespace util
 		exit(-1);
 	}
 
-#define util_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
+#define data_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
 
 	inline void check(bool val, const char* e, const char* file, int line)
 	{

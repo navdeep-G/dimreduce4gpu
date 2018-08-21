@@ -128,7 +128,7 @@ namespace matrix
 
 	void transpose(const Matrix<float>& A, Matrix<float>& B, device::DeviceContext& context)
 	{
-		util::util_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
+		util::data_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
 		const float alpha = 1.0f;
 		const float beta = 0.0f;
 		util::safe_cublas(cublasSgeam(context.cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, B.rows(), B.columns(), &alpha, A.data(), A.rows(), &beta, NULL, B.rows(), B.data(), B.rows()));
@@ -136,7 +136,7 @@ namespace matrix
 
 	void transpose(const Matrix<double>& A, Matrix<double>& B, device::DeviceContext& context)
 	{
-		util::util_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
+		util::data_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
 		const double alpha = 1.0f;
 		const double beta = 0.0f;
 		util::safe_cublas(cublasDgeam(context.cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, B.rows(), B.columns(), &alpha, A.data(), A.rows(), &beta, NULL, B.rows(), B.data(), B.rows()));
@@ -230,9 +230,9 @@ namespace matrix
 
 	void calculate_eigen_pairs_exact(const Matrix<float>& X, Matrix<float>& Q, Matrix<float>& w, device::DeviceContext& context)
 	{
-		util::util_check(X.rows() == X.columns(), "X must be a symmetric matrix");
-		util::util_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
-		util::util_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
+		util::data_check(X.rows() == X.columns(), "X must be a symmetric matrix");
+		util::data_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
+		util::data_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
 
 		int lwork;
 		util::safe_cusolver(cusolverDnSsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
@@ -252,9 +252,9 @@ namespace matrix
 
 	void calculate_eigen_pairs_exact(const Matrix<double>& X, Matrix<double>& Q, Matrix<double>& w, device::DeviceContext& context)
 	{
-		util::util_check(X.rows() == X.columns(), "X must be a symmetric matrix");
-		util::util_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
-		util::util_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
+		util::data_check(X.rows() == X.columns(), "X must be a symmetric matrix");
+		util::data_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
+		util::data_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
 
 		int lwork;
 		util::safe_cusolver(cusolverDnDsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
@@ -286,8 +286,8 @@ namespace matrix
 	//Stricly floating point operations that are not used
 	void linear_solve(const Matrix<float>& A, Matrix<float>& X, const Matrix<float>& B, device::DeviceContext& context)
 	{
-		util::util_check(A.rows()>= A.columns(),"Linear solve requires m >= n");
-		util::util_check(X.rows()>= X.columns(),"Linear solve requires n >= k"); //TODO: is this restriction necessary?
+		util::data_check(A.rows()>= A.columns(),"Linear solve requires m >= n");
+		util::data_check(X.rows()>= X.columns(),"Linear solve requires n >= k"); //TODO: is this restriction necessary?
 
 		Matrix<float> A_copy(A);
 		Matrix<float> B_copy(A.rows(), A.columns());
@@ -308,10 +308,10 @@ namespace matrix
 
 		util::safe_cusolver(cusolverDnSgeqrf(context.cusolver_handle, A_copy.rows(), A_copy.columns(), A_copy.data(), A_copy.rows(), d_tau, d_work, work_size, d_dev_info));
 
-		util::util_check(dev_info[0] == 0, "geqrf unsuccessful");
+		util::data_check(dev_info[0] == 0, "geqrf unsuccessful");
 
 		util::safe_cusolver(cusolverDnSormqr(context.cusolver_handle, CUBLAS_SIDE_LEFT, CUBLAS_OP_T, A.rows(), A.columns(), (std::min)(A.rows(), A.columns()), A_copy.data(), A.rows(), d_tau, B_copy.data(), A.rows(), d_work, work_size, d_dev_info));
-		util::util_check(dev_info[0] == 0, "ormqr unsuccessful");
+		util::data_check(dev_info[0] == 0, "ormqr unsuccessful");
 
 		Matrix<float> R(A.columns(), A.columns());
 		Matrix<float> QTB(A.columns(), B.columns());
@@ -343,7 +343,7 @@ namespace matrix
 
 	void pseudoinverse(const Matrix<float>& A, Matrix<float>& pinvA, device::DeviceContext& context)
 	{
-		util::util_check(A.rows() == pinvA.columns() && A.columns() == pinvA.rows(), "pseudoinverse dimensions incorrect");
+		util::data_check(A.rows() == pinvA.columns() && A.columns() == pinvA.rows(), "pseudoinverse dimensions incorrect");
 
 		//Add zero rows if m < n such that m >= n
 		Matrix<float> A_extended((std::max)(A.columns(), A.rows()), A.columns());

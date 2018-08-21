@@ -271,7 +271,7 @@ namespace matrix
 
 		void copy(const Matrix<T>& M)
 		{
-			util::util_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy matrix. Dimensions are different.");
+			util::data_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy matrix. Dimensions are different.");
 			thrust::copy(M.dptr(), M.dptr() + M.size(), this->dptr());
 		}
 
