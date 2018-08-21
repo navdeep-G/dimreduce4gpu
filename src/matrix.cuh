@@ -6,8 +6,6 @@
 
 namespace matrix
 {
-	using namespace tsvd;
-
 	/**
 	 * \class	Matrix
 	 *
@@ -47,7 +45,7 @@ namespace matrix
 
 		Matrix(size_t m, size_t n) : _m(m), _n(n)
 		{
-			safe_cuda(cudaMalloc(&_data, _n*_m* sizeof(T)));
+			util::safe_cuda(cudaMalloc(&_data, _n*_m* sizeof(T)));
 		}
 
 		/**
@@ -60,13 +58,13 @@ namespace matrix
 
 		Matrix(const Matrix<T>& M) : _n(M.columns()), _m(M.rows())
 		{
-			safe_cuda(cudaMalloc(&_data, _n*_m* sizeof(T)));
+			util::safe_cuda(cudaMalloc(&_data, _n*_m* sizeof(T)));
 			this->copy(M);
 		}
 
 		~Matrix()
 		{
-			safe_cuda(cudaFree(_data));
+			util::safe_cuda(cudaFree(_data));
 		}
 
 		/**
@@ -84,9 +82,9 @@ namespace matrix
 			_n = n;
 			if (_data != nullptr)
 			{
-				safe_cuda(cudaFree(_data));
+				util::safe_cuda(cudaFree(_data));
 			}
-			safe_cuda(cudaMalloc(&_data, _n*_m* sizeof(T)));
+			util::safe_cuda(cudaMalloc(&_data, _n*_m* sizeof(T)));
 		}
 
 		/**
@@ -273,7 +271,7 @@ namespace matrix
 
 		void copy(const Matrix<T>& M)
 		{
-			tsvd_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy matrix. Dimensions are different.");
+			util::data_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy matrix. Dimensions are different.");
 			thrust::copy(M.dptr(), M.dptr() + M.size(), this->dptr());
 		}
 

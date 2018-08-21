@@ -6,28 +6,26 @@
 
 namespace device
 {
-	using namespace tsvd;
-
 	class DeviceContext
 	{
 	public:
 		cublasHandle_t cublas_handle;
 		cusolverDnHandle_t cusolver_handle;
 		cusparseHandle_t cusparse_handle;
-		tsvd::CubMemory cub_mem;
+		util::CubMemory cub_mem;
 
 		DeviceContext()
 		{
-			safe_cublas(cublasCreate(&cublas_handle));
-			safe_cusolver(cusolverDnCreate(&cusolver_handle));
-			safe_cusparse(cusparseCreate(&cusparse_handle));
+			util::safe_cublas(cublasCreate(&cublas_handle));
+			util::safe_cusolver(cusolverDnCreate(&cusolver_handle));
+			util::safe_cusparse(cusparseCreate(&cusparse_handle));
 		}
 
 		~DeviceContext()
 		{
-			safe_cublas(cublasDestroy(cublas_handle));
-			safe_cusolver(cusolverDnDestroy(cusolver_handle));
-			safe_cusparse(cusparseDestroy(cusparse_handle));
+			util::safe_cublas(cublasDestroy(cublas_handle));
+			util::safe_cusolver(cusolverDnDestroy(cusolver_handle));
+			util::safe_cusparse(cusparseDestroy(cusparse_handle));
 		}
 	};
 }
