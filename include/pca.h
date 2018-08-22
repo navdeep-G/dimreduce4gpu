@@ -6,6 +6,18 @@
 #define pca_export
 #endif
 
+namespace matrix {
+
+template<typename T>
+class Matrix;
+
+}
+
+namespace device {
+class DeviceContext;
+
+}
+
 namespace pca {
 
 extern "C" {

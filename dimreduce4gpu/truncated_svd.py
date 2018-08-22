@@ -1,7 +1,7 @@
 import ctypes
 import sys
 import numpy as np
-from .lib_dimreduce4gpu import _load_dimreduce4gpu_lib
+from .lib_dimreduce4gpu import _load_tsvd_lib
 from .lib_dimreduce4gpu import params
 
 class TruncatedSVD(object):
@@ -111,7 +111,7 @@ class TruncatedSVD(object):
                              "C++ INT_MAX (2147483647) "
                              "but got`" + str(self.n_iter))
 
-        _tsvd_code = _load_dimreduce4gpu_lib()
+        _tsvd_code = _load_tsvd_lib()
         _tsvd_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(X_transformed),
                    _as_fptr(explained_variance), _as_fptr(explained_variance_ratio), param)
 

@@ -6,7 +6,6 @@
 
 namespace pca
 {
-	using namespace pca;
 
 	/**
 	* Conduct PCA on a matrix
