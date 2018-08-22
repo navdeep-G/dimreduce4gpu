@@ -1,35 +1,38 @@
 import ctypes
 import sys
 import numpy as np
-from .lib_tsvd import _load_tsvd_lib
-from .lib_tsvd import params
+from .truncated_svd import TruncatedSVD
+from .lib_dimreduce4gpu import _load_dimreduce4gpu_lib
+from .lib_dimreduce4gpu import params
 
-class TruncatedSVD(object):
-    """Dimensionality reduction using truncated SVD for GPUs
-    Perform linear dimensionality reduction by means of truncated singular value decomposition (SVD).
-    Contrary to PCA, this estimator does not center the data before computing the singular value decomposition.
+class PCA(TruncatedSVD):
+    """Principal Component Analysis (PCA)
+
+    Dimensionality reduction using truncated Singular Value Decomposition
+    for GPU
+
+    This implementation uses the Cusolver implementation of the truncated SVD.
+    Contrary to SVD, this estimator does center the data before computing
+    the singular value decomposition.
+
     Parameters
     ----------
     n_components: int, Default=2
         Desired dimensionality of output data
-    algorithm: string, Default="power"
-        SVD solver to use.
-        Either "cusolver" (similar to ARPACK)
-        or "power" for the power method.
-    n_iter: int, Default=100
-        number of iterations (only relevant for power method)
-        Should be at most 2147483647 due to INT_MAX in C++ backend.
-    int random_state: seed (None for auto-generated)
-    float tol: float, Default=1E-5
-        Tolerance for "power" method. Ignored by "cusolver".
-        Should be > 0.0 to ensure convergence.
-        Should be 0.0 to effectively ignore
-        and only base convergence upon n_iter
+
+    whiten : bool, optional
+        When True (False by default) the `components_` vectors are multiplied
+        by the square root of (n_samples) and divided by the singular values to
+        ensure uncorrelated outputs with unit component-wise variances.
+
+        Whitening will remove some information from the transformed signal
+        (the relative variance scales of the components) but can sometime
+        improve the predictive accuracy of the downstream estimators by
+        making their data respect some hard-wired assumptions.
+
     verbose: bool
         Verbose or not
-    n_gpus : int, optional, default: 1
-        How many gpus to use.  If 0, use CPU backup method.
-        Currently SVD only uses 1 GPU, so >1 has no effect compared to 1.
+
     gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
     """
@@ -50,7 +53,7 @@ class TruncatedSVD(object):
         self.gpu_id = gpu_id
 
     def fit(self, X):
-        """Fit Truncated SVD on matrix X.
+        """Fit Principal Components Analysis on matrix X.
 
         :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
@@ -62,7 +65,7 @@ class TruncatedSVD(object):
         return self
 
     def fit_transform(self, X):
-        """Fit Truncated SVD on matrix X and perform dimensionality reduction on X.
+        """Fit Principal Components Analysis on matrix X and perform dimensionality reduction on X.
         :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
         :param y : Ignored
@@ -97,7 +100,7 @@ class TruncatedSVD(object):
         param.random_state = self.random_state
         param.verbose = self.verbose
         param.gpu_id = self.gpu_id
-        param.whiten = False #Whitening is not exposed for tsvd yet
+        param.whiten = False #Whitening is not exposed for pca yet
 
         if param.tol < 0.0:
             raise ValueError("The `tol` parameter must be >= 0.0 "
@@ -111,8 +114,8 @@ class TruncatedSVD(object):
                              "C++ INT_MAX (2147483647) "
                              "but got`" + str(self.n_iter))
 
-        _tsvd_code = _load_tsvd_lib()
-        _tsvd_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(X_transformed),
+        _pca_code = _load_dimreduce4gpu_lib()
+        _pca_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(X_transformed),
                    _as_fptr(explained_variance), _as_fptr(explained_variance_ratio), param)
 
         self._w = w

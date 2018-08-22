@@ -1,4 +1,4 @@
-from tsvd import truncated_svd
+from dimreduce4gpu import truncated_svd
 import numpy as np
 import time
 from sklearn.decomposition import TruncatedSVD

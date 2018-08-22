@@ -1,6 +1,6 @@
 
 cmake_minimum_required (VERSION 3.5)
-project(truncatedSVD)
+project(dimreduce4gpu)
 find_package(OpenMP)
 find_package(CUDA QUIET REQUIRED)
 
@@ -20,6 +20,6 @@ else()
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 endif()
 
-cuda_add_library(tsvd SHARED ${SOURCES})
+cuda_add_library(dimreduce4gpu SHARED ${SOURCES})
 
-target_link_libraries(tsvd ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})
+target_link_libraries(dimreduce4gpu ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})
