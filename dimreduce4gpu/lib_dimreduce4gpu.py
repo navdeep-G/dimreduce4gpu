@@ -12,14 +12,14 @@ class params(ctypes.Structure):
                 ('gpu_id', ctypes.c_int),
                 ('whiten', ctypes.c_bool)]
 
-def _load_tsvd_lib():
+def _load_dimreduce4gpu_lib():
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-    dll_path = [os.path.join(sys.prefix, 'tsvd'), os.path.join(curr_path, '../lib/')]
+    dll_path = [os.path.join(sys.prefix, 'dimreduce4gpu'), os.path.join(curr_path, '../lib/')]
 
     if os.name == 'nt':
-        dll_path = [os.path.join(p, 'tsvd.dll') for p in dll_path]
+        dll_path = [os.path.join(p, 'dimreduce4gpu.dll') for p in dll_path]
     else:
-        dll_path = [os.path.join(p, 'libtsvd.so') for p in dll_path]
+        dll_path = [os.path.join(p, 'libdimreduce4gpu.so') for p in dll_path]
 
     lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
 
@@ -33,8 +33,8 @@ def _load_tsvd_lib():
     except:
         pass
     _mod = ctypes.cdll.LoadLibrary(lib_path[0])
-    _tsvd_code = _mod.truncated_svd_float
-    _tsvd_code.argtypes = [ctypes.POINTER(ctypes.c_float),
+    _dimreduce4gpu_code = _mod.truncated_svd_float
+    _dimreduce4gpu_code.argtypes = [ctypes.POINTER(ctypes.c_float),
                            ctypes.POINTER(ctypes.c_float),
                            ctypes.POINTER(ctypes.c_float),
                            ctypes.POINTER(ctypes.c_float),
@@ -43,4 +43,4 @@ def _load_tsvd_lib():
                            ctypes.POINTER(ctypes.c_float),
                            params]
 
-    return _tsvd_code
+    return _dimreduce4gpu_code
