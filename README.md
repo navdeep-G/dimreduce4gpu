@@ -6,7 +6,7 @@ Dimensionality reduction (`dimreduce`) on GPUs (`4gpu`)
 
 ### Build Environment
 
-* NOTE: `dimreduce4gpu` is tested up to CUDA 9.2
+* **NOTE:** `dimreduce4gpu` is tested up to CUDA 9.2
 
 * Linux machine w/ GCC4.9+ and CMake installed.
 
