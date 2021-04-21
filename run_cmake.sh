@@ -5,10 +5,8 @@ if [[ ! -e $dir ]]; then
 elif [[ ! -d $dir ]]; then
     echo "$dir already exists but is not a directory" 1>&2
 fi
-cd build
-cmake ..
+cmake
 make
-cd ..
 python setup.py install
 cd test
 echo "TSVD TEST"
