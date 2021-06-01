@@ -1,3 +1,9 @@
+.setup.py.swp
+dimreduce4gpu.egg-info/
+dimreduce4gpu/__pycache__/
+dimreduce4gpu/dimreduce4gpu.egg-info/
+dist/
+
 CMakeCache.txt
 CMakeFiles/
 Makefile
