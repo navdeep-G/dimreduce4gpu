@@ -1,3 +1,5 @@
+import setuptools
+from setuptools import find_packages
 from distutils.core import setup
 import os
 
@@ -18,6 +20,6 @@ setup(name='dimreduce4gpu',
       author='Navdeep Gill',
       author_email='mr.navdeepgill@gmail.com',
       url='https://github.com/navdeep-G/dimreduce4gpu',
-      packages=['dimreduce4gpu',],
+      packages=['dimreduce4gpu',], package_data={'': ['./lib/libdimreduce4gpu.so']},
       data_files=[('dimreduce4gpu', lib_path)])
 

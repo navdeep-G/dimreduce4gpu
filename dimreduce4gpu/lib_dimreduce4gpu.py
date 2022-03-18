@@ -14,7 +14,7 @@ class params(ctypes.Structure):
 
 def _load_tsvd_lib():
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-    dll_path = [os.path.join(sys.prefix, 'dimreduce4gpu'), os.path.join(curr_path, '../lib/')]
+    dll_path = [os.path.join(sys.prefix, 'dimreduce4gpu'), curr_path]
 
     if os.name == 'nt':
         dll_path = [os.path.join(p, 'dimreduce4gpu.dll') for p in dll_path]
