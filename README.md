@@ -2,6 +2,11 @@
 
 Dimensionality reduction (`dimreduce`) on GPUs (`4gpu`) 
 
+* Current Algorithms:
+    * PCA
+    * Truncated SVD
+
+
 ## Building
 
 ### Build Environment
