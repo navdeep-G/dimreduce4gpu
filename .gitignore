@@ -8,7 +8,6 @@ dist/
 
 CMakeCache.txt
 CMakeFiles/
-Makefile
 cmake_install.cmake
 .cproject
 .project
