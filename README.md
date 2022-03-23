@@ -46,8 +46,7 @@ export CUDADIR=/usr/local/cuda/include/
 git clone --recursive git@github.com:navdeep-G/dimreduce4gpu.git
 cd dimreduce4gpu
 virtualenv -p python3.6 env
-pip install -r requirements.txt
-bash run_cmake.sh
+make
 ```
 
 ## `dimreduce4gpu` usage in other projects
