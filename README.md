@@ -1,36 +1,47 @@
-# dimreduce4gpu
+# `dimreduce4gpu`
 
-`dimreduce4gpu` is a dimensionality reduction library optimized for GPUs, enabling fast and efficient data reduction through CUDA. This library includes popular algorithms, such as Principal Component Analysis (PCA) and Truncated Singular Value Decomposition (SVD), specifically adapted to leverage GPU acceleration, making it suitable for high-performance applications in data science and machine learning.
+**`dimreduce4gpu`** is a GPU-accelerated dimensionality reduction library built with CUDA, designed for fast and efficient large-scale data reduction. It provides implementations of popular algorithms like Principal Component Analysis (PCA) and Truncated Singular Value Decomposition (SVD), optimized to harness GPU power—making it ideal for high-performance applications in data science and machine learning.
 
-## Current Algorithms
+---
 
-- **Principal Component Analysis (PCA)**: A technique that reduces data dimensionality by transforming variables into a set of uncorrelated principal components.
-- **Truncated SVD**: An approximation of SVD that focuses on the most significant singular values, useful for sparse and large-scale datasets.
+## 🚀 Features
 
-## Building `dimreduce4gpu`
+- **GPU-Accelerated**: Leverages CUDA to achieve significant speedups on large datasets.
+- **Optimized Implementations**: Includes PCA and Truncated SVD tailored for high throughput and scale.
+- **Python Integration**: Easily integrates into Python-based data workflows.
 
-### Build Environment Requirements
+---
 
-To successfully build and run `dimreduce4gpu`, ensure your environment meets the following requirements:
+## 📌 Supported Algorithms
 
-- **CUDA Version**: Compatible up to CUDA 9.0
-- **Operating System**: Linux
-- **Compiler**: GCC 4.9+ with CMake
-- **Python Version**: Python 3.6
+- **Principal Component Analysis (PCA)**  
+  Reduces dimensionality by transforming variables into a set of linearly uncorrelated principal components.
 
-#### Setup for Ubuntu 16.04 with `virtualenv`
+- **Truncated Singular Value Decomposition (SVD)**  
+  Approximates SVD by retaining only the most significant singular values, making it suitable for sparse and large-scale datasets.
 
-1. **Install Python and required packages**:
-    ```bash
-    apt-get -y --no-install-recommends install \
-        python3.6 \
-        python3.6-dev \
-        virtualenv \
-        python3-pip
-    virtualenv --python=python3.6 .venv
-    pip install setuptools --no-cache-dir
-    . .venv/bin/activate
-    ```
+---
+
+## 🛠 Build Instructions
+
+### 📋 Requirements
+
+- **CUDA**: Up to version 9.0  
+- **OS**: Linux (tested on Ubuntu 16.04)  
+- **Compiler**: GCC 4.9+ and CMake  
+- **Python**: Version 3.6
+
+---
+
+### 🐧 Setup on Ubuntu 16.04 (with `virtualenv`)
+
+1. **Install Dependencies**:
+   ```bash
+   sudo apt-get -y --no-install-recommends install \
+       python3.6 \
+       python3.6-dev \
+       virtualenv \
+       python3-pip
 
 2. **Configure environment variables**:
     Add the following lines to `.bashrc` or your environment configuration file to set up CUDA paths:
