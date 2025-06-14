@@ -42,8 +42,16 @@
        python3.6-dev \
        virtualenv \
        python3-pip
+   ```
 
-2. **Configure environment variables**:
+2. **Create virtual environment**
+    ```bash
+    virtualenv --python=python3.6 .venv
+    source .venv/bin/activate
+    pip install setuptools --no-cache-dir
+    ```
+
+3. **Configure environment variables**:
     Add the following lines to `.bashrc` or your environment configuration file to set up CUDA paths:
     ```bash
     export CUDA_HOME=/usr/local/cuda
@@ -53,7 +61,7 @@
     export CUDADIR=/usr/local/cuda/include/
     ```
 
-3. **Compile the project and install the Python interface**:
+4. **Compile the project and install the Python interface**:
     ```bash
     git clone --recursive git@github.com:navdeep-G/dimreduce4gpu.git
     cd dimreduce4gpu
