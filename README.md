@@ -44,15 +44,16 @@
        python3-pip
    ```
 
-2. **Create virtual environment**
+2. **Create virtual environment**:
     ```bash
     virtualenv --python=python3.6 .venv
     source .venv/bin/activate
     pip install setuptools --no-cache-dir
     ```
 
-3. **Configure environment variables**:
-    Add the following lines to `.bashrc` or your environment configuration file to set up CUDA paths:
+3. **Configure CUDA Environment**:
+
+   Add the following to your .bashrc or shell configuration file:
     ```bash
     export CUDA_HOME=/usr/local/cuda
     export PATH=$CUDA_HOME/bin:$PATH
@@ -61,7 +62,7 @@
     export CUDADIR=/usr/local/cuda/include/
     ```
 
-4. **Compile the project and install the Python interface**:
+5. **Clone and Build the Project:e**:
     ```bash
     git clone --recursive git@github.com:navdeep-G/dimreduce4gpu.git
     cd dimreduce4gpu
@@ -69,14 +70,23 @@
     make
     ```
 
-## Usage of `dimreduce4gpu` in Other Projects
+## 📦 Integration in Other Projects
 
-The `dimreduce4gpu` library is integrated into other open-source projects for GPU-accelerated data science solutions. For example:
+`dimreduce4gpu` is also part of other GPU-optimized machine learning ecosystems:
 
-- **[H2O4GPU](https://github.com/h2oai/h2o4gpu/tree/master)**: A GPU-optimized library of solvers by [H2O.ai](https://www.h2o.ai/) which includes implementations of dimensionality reduction methods:
-  - **Truncated SVD**: [H2O4GPU SVD Implementation](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
-  - **Principal Component Analysis**: [H2O4GPU PCA Implementation](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca)
+- **[H2O4GPU](https://github.com/h2oai/h2o4gpu)** by [H2O.ai](https://www.h2o.ai/)
+  - 🔹 [Truncated SVD Module](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
+  - 🔹 [PCA Module](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca)
 
 ---
 
-For additional information or to contribute, feel free to submit an issue or a pull request on GitHub. Thank you for your interest in `dimreduce4gpu`!
+## 🤝 Contributing
+
+We welcome contributions! Feel free to:
+
+- 🐛 [Open an issue](https://github.com/navdeep-G/dimreduce4gpu/issues) for bugs or feature requests
+- 💬 Ask questions or share ideas
+- 🔧 Submit pull requests to improve the project
+
+Thank you for using **`dimreduce4gpu`**!
+
