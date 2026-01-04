@@ -20,3 +20,4 @@ env/
 python/.idea/workspace.xml
 tsvd/__pycache__/
 .run_cmake.sh.swp
+tests/__pycache__/
