@@ -1,6 +1,8 @@
 #pragma once
 #include "cublas_v2.h"
 #include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
 #include <thrust/transform.h>
 #include <sstream>
