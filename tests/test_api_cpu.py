@@ -17,13 +17,18 @@ def test_pca_and_tsvd_behavior_without_native():
         assert pca.n_components == 2
         assert tsvd.n_components == 2
     else:
-        # On CPU-only machines, construction should raise a clear error.
+        # On CPU-only machines, *using* the estimators should raise a clear error.
+        # Construction can be pure-Python; the native library is required at fit/transform time.
+        import numpy as np
+
+        X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], dtype=np.float32)
+
         with pytest.raises(RuntimeError) as e1:
-            dimreduce4gpu.PCA(n_components=2)
+            dimreduce4gpu.PCA(n_components=2).fit_transform(X)
         msg1 = str(e1.value).lower()
         assert "native extension" in msg1 or "shared library" in msg1 or "cuda" in msg1
 
         with pytest.raises(RuntimeError) as e2:
-            dimreduce4gpu.TruncatedSVD(n_components=2)
+            dimreduce4gpu.TruncatedSVD(n_components=2).fit_transform(X)
         msg2 = str(e2.value).lower()
         assert "native extension" in msg2 or "shared library" in msg2 or "cuda" in msg2

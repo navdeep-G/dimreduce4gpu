@@ -72,8 +72,9 @@ class PCA(TruncatedSVD):
         """
         import scipy
 
-        if isinstance(X, scipy.sparse.csr.csr_matrix):
-            X = scipy.sparse.csr_matrix.todense(X)
+        # SciPy 1.11+ deprecates the nested namespace `scipy.sparse.csr.csr_matrix`.
+        if isinstance(X, scipy.sparse.csr_matrix):
+            X = X.toarray()
 
         X = self._check_double(X)
         matrix_type = np.float64 if self.double_precision == 1 else np.float32
