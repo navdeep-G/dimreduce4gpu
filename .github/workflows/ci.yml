@@ -53,3 +53,38 @@ jobs:
       - name: Run tests
         run: |
           pytest
+
+  build-native-so:
+    name: Build native .so (CUDA compile)
+    runs-on: ubuntu-latest
+
+    # Use a CUDA "devel" container so nvcc is available.
+    # Compiling does not require a GPU.
+    container:
+      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential cmake git file binutils
+          cmake --version
+          nvcc --version
+      - name: Configure (CMake)
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: |
+          cmake --build build -j
+      - name: Verify .so exists where expected
+        run: |
+          test -f dimreduce4gpu/lib/libdimreduce4gpu.so
+          ls -lh dimreduce4gpu/lib/libdimreduce4gpu.so
+      - name: Sanity check the artifact is a shared library (ELF)
+        run: |
+          file dimreduce4gpu/lib/libdimreduce4gpu.so
+          readelf -h dimreduce4gpu/lib/libdimreduce4gpu.so | grep -E "Type:\s+DYN"
