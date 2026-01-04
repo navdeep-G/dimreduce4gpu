@@ -1,0 +1,5 @@
+site_name: dimreduce4gpu
+nav:
+  - Home: index.md
+theme:
+  name: material

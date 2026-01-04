@@ -1,92 +1,94 @@
-# `dimreduce4gpu`
+# dimreduce4gpu
 
-**`dimreduce4gpu`** is a GPU-accelerated dimensionality reduction library built with CUDA, designed for fast and efficient large-scale data reduction. It provides implementations of popular algorithms like Principal Component Analysis (PCA) and Truncated Singular Value Decomposition (SVD), optimized to harness GPU power—making it ideal for high-performance applications in data science and machine learning.
+`dimreduce4gpu` provides **GPU-accelerated** dimensionality reduction primitives:
+- **PCA** (centers data)
+- **TruncatedSVD** (does not center data)
 
----
+The Python API calls into a CUDA shared library (`libdimreduce4gpu.so`). The repository includes a CMake
+build for that native library.
 
-## 🚀 Features
+> **Note on CI:** the default GitHub Actions workflow runs on CPU-only runners, so it validates **linting**
+> and **CPU-safe import/tests**. GPU build/runtime is intentionally not executed in CI.
 
-- **GPU-Accelerated**: Leverages CUDA to achieve significant speedups on large datasets.
-- **Optimized Implementations**: Includes PCA and Truncated SVD tailored for high throughput and scale.
-- **Python Integration**: Easily integrates into Python-based data workflows.
+## Quickstart (Python)
 
----
+```python
+import numpy as np
+from dimreduce4gpu import PCA
 
-## 📌 Supported Algorithms
+X = np.random.default_rng(0).normal(size=(10_000, 128)).astype(np.float32)
+pca = PCA(n_components=32)
 
-- **Principal Component Analysis (PCA)**  
-  Reduces dimensionality by transforming variables into a set of linearly uncorrelated principal components.
+# Requires the CUDA shared library to be built and available.
+X2 = pca.fit_transform(X)
+print(X2.shape)
+```
 
-- **Truncated Singular Value Decomposition (SVD)**  
-  Approximates SVD by retaining only the most significant singular values, making it suitable for sparse and large-scale datasets.
+If the native CUDA library is not available, you can check:
 
----
+```python
+import dimreduce4gpu
 
-## 🛠 Build Instructions
+if not dimreduce4gpu.native_available():
+    print("GPU library missing; build the CUDA library first.")
+```
 
-### 📋 Requirements
+## Install (Python-only)
 
-- **CUDA**: Up to version 9.0  
-- **OS**: Linux (tested on Ubuntu 16.04)  
-- **Compiler**: GCC 4.9+ and CMake  
-- **Python**: Version 3.6
+```bash
+python -m pip install -e .
+```
 
----
+This installs the Python wrappers. GPU functionality requires building the CUDA library (next section).
 
-### 🐧 Setup on Ubuntu 16.04 (with `virtualenv`)
+## Build the CUDA library
 
-1. **Install Dependencies**:
-   ```bash
-   sudo apt-get -y --no-install-recommends install \
-       python3.6 \
-       python3.6-dev \
-       virtualenv \
-       python3-pip
-   ```
+### Prerequisites
+- CUDA toolkit installed (CUDA 11/12 recommended; older versions may work)
+- A C++ compiler supported by your CUDA toolkit
+- CMake
 
-2. **Create virtual environment**:
-    ```bash
-    virtualenv --python=python3.6 .venv
-    source .venv/bin/activate
-    pip install setuptools --no-cache-dir
-    ```
+### Build
+```bash
+rm -rf build
+mkdir build
+cd build
+cmake ..
+make -j
+```
 
-3. **Configure CUDA Environment**:
+The build places `libdimreduce4gpu.so` into:
 
-   Add the following to your .bashrc or shell configuration file:
-    ```bash
-    export CUDA_HOME=/usr/local/cuda
-    export PATH=$CUDA_HOME/bin:$PATH
-    export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/lib64:$CUDA_HOME/extras/CUPTI/lib64
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
-    export CUDADIR=/usr/local/cuda/include/
-    ```
+```
+dimreduce4gpu/lib/
+```
 
-5. **Clone and Build the Project:e**:
-    ```bash
-    git clone --recursive git@github.com:navdeep-G/dimreduce4gpu.git
-    cd dimreduce4gpu
-    virtualenv -p python3.6 env
-    make
-    ```
+You can also override the lookup path at runtime:
 
-## 📦 Integration in Other Projects
+```bash
+export DIMREDUCE4GPU_LIB_PATH=/path/to/directory/containing/libdimreduce4gpu.so
+```
 
-`dimreduce4gpu` is also part of other GPU-optimized machine learning ecosystems:
+## Development
 
-- **[H2O4GPU](https://github.com/h2oai/h2o4gpu)** by [H2O.ai](https://www.h2o.ai/)
-  - 🔹 [Truncated SVD Module](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
-  - 🔹 [PCA Module](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca)
+```bash
+python -m pip install -e ".[dev]"
+ruff check .
+ruff format .
+pytest
+```
 
----
+## Benchmarks
 
-## 🤝 Contributing
+See `bench/benchmark_pca.py` for a simple benchmark harness. It will skip if the native library is not built.
 
-We welcome contributions! Feel free to:
+## Project hygiene
 
-- 🐛 [Open an issue](https://github.com/navdeep-G/dimreduce4gpu/issues) for bugs or feature requests
-- 💬 Ask questions or share ideas
-- 🔧 Submit pull requests to improve the project
+- CI: `.github/workflows/ci.yml`
+- Contributing guide: `CONTRIBUTING.md`
+- Security policy: `SECURITY.md`
 
-Thank you for using **`dimreduce4gpu`**!
+## Credits
 
+The CUDA implementations are based on ideas from the `h2o4gpu` project:
+- PCA module: https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca

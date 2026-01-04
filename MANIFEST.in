@@ -1,0 +1,8 @@
+include LICENSE
+include README.md
+include pyproject.toml
+include setup.cfg
+recursive-include dimreduce4gpu/lib *
+recursive-include docs *
+recursive-include bench *
+recursive-include examples *

@@ -1,4 +1,3 @@
-
 default: build_install_all
 
 clean:
@@ -8,19 +7,21 @@ clean:
 
 cmake:
 	rm -rf build
-	mkdir build
-	cd build && cmake .. && make
+	mkdir -p build
+	cd build && cmake .. && make -j
 
 setup:
-	pip install -r requirements.txt
+	python -m pip install -r requirements.txt
 
-build: setup
-	python setup.py bdist_wheel
+dev:
+	python -m pip install -e ".[dev]"
+
+build:
+	python -m pip wheel . -w dist
 
 build_all: cmake build
 
 build_install: build
-	pip install dist/dimreduce4gpu-0.1.0-py3-none-any.whl
+	python -m pip install --upgrade --force-reinstall dist/*.whl
 
 build_install_all: clean cmake build_install
-
