@@ -41,6 +41,7 @@ dev = [
 ]
 
 [tool.ruff]
+extend-exclude = ["test", "dimreduce4gpu/test"]
 line-length = 100
 target-version = "py39"
 
