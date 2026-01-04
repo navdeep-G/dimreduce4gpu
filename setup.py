@@ -1,25 +1,7 @@
-import setuptools
-from setuptools import find_packages
-from distutils.core import setup
-import os
+from __future__ import annotations
 
-curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-dll_path = [os.path.join(curr_path, '../lib/'),
-                os.path.join(curr_path, './lib/')]
+from setuptools import setup
 
-if os.name == 'nt':
-    dll_path = [os.path.join(p, 'dimreduce4gpu.dll') for p in dll_path]
-else:
-    dll_path = [os.path.join(p, 'libdimreduce4gpu.so') for p in dll_path]
-
-lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
-
-setup(name='dimreduce4gpu',
-      version='0.1.0',
-      description='Dimensionality Reduction on GPUs',
-      author='Navdeep Gill',
-      author_email='mr.navdeepgill@gmail.com',
-      url='https://github.com/navdeep-G/dimreduce4gpu',
-      packages=['dimreduce4gpu',], package_data={'': ['./lib/libdimreduce4gpu.so']},
-      data_files=[('dimreduce4gpu', lib_path)])
-
+# Configuration lives in setup.cfg / pyproject.toml.
+# This file is kept for compatibility with older tooling.
+setup()

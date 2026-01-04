@@ -1,10 +1,12 @@
 import ctypes
 import sys
-import numpy as np
-from .lib_dimreduce4gpu import _load_tsvd_lib
-from .lib_dimreduce4gpu import params
 
-class TruncatedSVD(object):
+import numpy as np
+
+from .lib_dimreduce4gpu import _load_tsvd_lib, params
+
+
+class TruncatedSVD:
     """Dimensionality reduction using truncated SVD for GPUs
     Perform linear dimensionality reduction by means of truncated singular value decomposition (SVD).
     Contrary to PCA, this estimator does not center the data before computing the singular value decomposition.
@@ -34,16 +36,24 @@ class TruncatedSVD(object):
         ID of the GPU on which the algorithm should run.
     """
 
-    def __init__(self, n_components=2, algorithm="power",
-                 n_iter=100, random_state=None, tol=1e-5,
-                 verbose=0, n_gpus=1, gpu_id=0):
+    def __init__(
+        self,
+        n_components=2,
+        algorithm="power",
+        n_iter=100,
+        random_state=None,
+        tol=1e-5,
+        verbose=0,
+        n_gpus=1,
+        gpu_id=0,
+    ):
         self.n_components = n_components
         self.algorithm = algorithm
         self.n_iter = n_iter
         if random_state is not None:
             self.random_state = random_state
         else:
-            self.random_state = np.random.randint(0, 2 ** 31 - 1)
+            self.random_state = np.random.randint(0, 2**31 - 1)
         self.tol = tol
         self.verbose = verbose
         self.n_gpus = n_gpus
@@ -72,6 +82,7 @@ class TruncatedSVD(object):
                          dense array.
         """
         import scipy
+
         if isinstance(X, scipy.sparse.csr.csr_matrix):
             X = scipy.sparse.csr_matrix.todense(X)
 
@@ -83,8 +94,7 @@ class TruncatedSVD(object):
         U = np.empty((X.shape[0], self.n_components), dtype=matrix_type)
         w = np.empty(self.n_components, dtype=matrix_type)
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
-        explained_variance_ratio = np.empty(self.n_components,
-                                            dtype=matrix_type)
+        explained_variance_ratio = np.empty(self.n_components, dtype=matrix_type)
         X_transformed = np.empty((U.shape[0], self.n_components), dtype=matrix_type)
 
         param = params()
@@ -97,23 +107,31 @@ class TruncatedSVD(object):
         param.random_state = self.random_state
         param.verbose = self.verbose
         param.gpu_id = self.gpu_id
-        param.whiten = False #Whitening is not exposed for tsvd yet
+        param.whiten = False  # Whitening is not exposed for tsvd yet
 
         if param.tol < 0.0:
-            raise ValueError("The `tol` parameter must be >= 0.0 "
-                             "but got " + str(param.tol))
+            raise ValueError("The `tol` parameter must be >= 0.0 but got " + str(param.tol))
         if param.n_iter < 1:
-            raise ValueError("The `n_iter` parameter must be > 1 "
-                             "but got " + str(param.n_iter))
+            raise ValueError("The `n_iter` parameter must be > 1 but got " + str(param.n_iter))
         if param.n_iter > 2147483647:
-            raise ValueError("The `n_iter parameter cannot exceed "
-                             "the value for "
-                             "C++ INT_MAX (2147483647) "
-                             "but got`" + str(self.n_iter))
+            raise ValueError(
+                "The `n_iter parameter cannot exceed "
+                "the value for "
+                "C++ INT_MAX (2147483647) "
+                "but got`" + str(self.n_iter)
+            )
 
         _tsvd_code = _load_tsvd_lib()
-        _tsvd_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(X_transformed),
-                   _as_fptr(explained_variance), _as_fptr(explained_variance_ratio), param)
+        _tsvd_code(
+            _as_fptr(X),
+            _as_fptr(Q),
+            _as_fptr(w),
+            _as_fptr(U),
+            _as_fptr(X_transformed),
+            _as_fptr(explained_variance),
+            _as_fptr(explained_variance_ratio),
+            param,
+        )
 
         self._w = w
         self._X = X
@@ -147,8 +165,9 @@ class TruncatedSVD(object):
     def _check_double(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
-            self._print_verbose(0, "Detected numeric data format which is not "
-                                   "supported. Casting to np.float32.")
+            self._print_verbose(
+                0, "Detected numeric data format which is not supported. Casting to np.float32."
+            )
             data = np.ascontiguousarray(data, dtype=np.floa32)
         if data.dtype == np.float64:
             self._print_verbose(0, "Detected np.float64 data")
@@ -160,8 +179,8 @@ class TruncatedSVD(object):
             data = np.ascontiguousarray(data, dtype=np.float32)
         else:
             raise ValueError(
-                "Unsupported data type %s, "
-                "should be either np.float32 or np.float64" % data.dtype)
+                f"Unsupported data type {data.dtype}, should be either np.float32 or np.float64"
+            )
         return data
 
     def _print_verbose(self, level, msg):
@@ -182,18 +201,22 @@ class TruncatedSVD(object):
         # introspect the constructor arguments to find the model parameters
         # to represent
         from sklearn.utils.fixes import signature
+
         init_signature = signature(init)
         # Consider the constructor parameters excluding 'self'
-        parameters = [p for p in init_signature.parameters.values()
-                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+        parameters = [
+            p
+            for p in init_signature.parameters.values()
+            if p.name != 'self' and p.kind != p.VAR_KEYWORD
+        ]
         for p in parameters:
             if p.kind == p.VAR_POSITIONAL:
-                raise RuntimeError("scikit-learn estimators should always "
-                                   "specify their parameters in the signature"
-                                   " of their __init__ (no varargs)."
-                                   " %s with constructor %s doesn't "
-                                   " follow this convention."
-                                   % (cls, init_signature))
+                raise RuntimeError(
+                    "scikit-learn estimators should always "
+                    "specify their parameters in the signature"
+                    " of their __init__ (no varargs)."
+                    f" {cls} with constructor {init_signature} doesn't follow this convention."
+                )
         # Extract and sort argument names excluding 'self'
         return sorted([p.name for p in parameters])
 
@@ -217,7 +240,7 @@ class TruncatedSVD(object):
             try:
                 with warnings.catch_warnings(record=True) as w:
                     value = getattr(self, key, None)
-                if w and w[0].category == DeprecationWarning:
+                if w and w[0].category is DeprecationWarning:
                     # if the parameter is deprecated, don't show it
                     continue
             finally:
@@ -240,25 +263,24 @@ class TruncatedSVD(object):
             return self
         valid_params = self.get_params(deep=True)
         from sklearn.externals import six
+
         for key, value in six.iteritems(params):
             split = key.split('__', 1)
             if len(split) > 1:
                 # nested objects case
                 name, sub_name = split
                 if name not in valid_params:
-                    raise ValueError('Invalid parameter %s for estimator %s. '
-                                     'Check the list of available parameters '
-                                     'with `estimator.get_params().keys()`.' %
-                                     (name, self))
+                    raise ValueError(
+                        f"Invalid parameter {name} for estimator {self}. Check the list of available parameters with `estimator.get_params().keys()`."
+                    )
                 sub_object = valid_params[name]
                 sub_object.set_params(**{sub_name: value})
             else:
                 # simple objects case
                 if key not in valid_params:
-                    raise ValueError('Invalid parameter %s for estimator %s. '
-                                     'Check the list of available parameters '
-                                     'with `estimator.get_params().keys()`.' %
-                                     (key, self.__class__.__name__))
+                    raise ValueError(
+                        f"Invalid parameter {key} for estimator {self.__class__.__name__}. Check the list of available parameters with `estimator.get_params().keys()`."
+                    )
                 setattr(self, key, value)
         return self
 
@@ -300,6 +322,7 @@ class TruncatedSVD(object):
         """
         return self._U
 
+
 def _as_dptr(x):
     '''
 
@@ -308,6 +331,7 @@ def _as_dptr(x):
     '''
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
+
 def _as_fptr(x):
     '''
 
@@ -315,4 +339,3 @@ def _as_fptr(x):
     :return:
     '''
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-

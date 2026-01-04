@@ -1,5 +1,12 @@
-from .lib_dimreduce4gpu import _load_tsvd_lib
-from .lib_dimreduce4gpu import _load_pca_lib
-from .lib_dimreduce4gpu import params
-from .truncated_svd import TruncatedSVD
+from __future__ import annotations
+
+from ._native import native_available, require_native
 from .pca import PCA
+from .truncated_svd import TruncatedSVD
+
+__all__ = [
+    "PCA",
+    "TruncatedSVD",
+    "native_available",
+    "require_native",
+]

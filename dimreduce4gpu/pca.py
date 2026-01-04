@@ -1,8 +1,10 @@
 import ctypes
+
 import numpy as np
+
+from .lib_dimreduce4gpu import _load_pca_lib, params
 from .truncated_svd import TruncatedSVD
-from .lib_dimreduce4gpu import _load_pca_lib
-from .lib_dimreduce4gpu import params
+
 
 class PCA(TruncatedSVD):
     """Principal Component Analysis (PCA)
@@ -36,8 +38,7 @@ class PCA(TruncatedSVD):
         ID of the GPU on which the algorithm should run.
     """
 
-    def __init__(self, n_components=2, whiten=False,
-                 verbose=0, gpu_id=0):
+    def __init__(self, n_components=2, whiten=False, verbose=0, gpu_id=0):
         super().__init__(n_components)
         self.whiten = whiten
         self.n_components_ = n_components
@@ -70,16 +71,15 @@ class PCA(TruncatedSVD):
                          dense array.
         """
         import scipy
+
         if isinstance(X, scipy.sparse.csr.csr_matrix):
             X = scipy.sparse.csr_matrix.todense(X)
 
         X = self._check_double(X)
         matrix_type = np.float64 if self.double_precision == 1 else np.float32
         X = np.asfortranarray(X, dtype=matrix_type)
-        Q = np.empty(
-            (self.n_components, X.shape[1]), dtype=matrix_type)
-        U = np.empty(
-            (X.shape[0], self.n_components), dtype=matrix_type)
+        Q = np.empty((self.n_components, X.shape[1]), dtype=matrix_type)
+        U = np.empty((X.shape[0], self.n_components), dtype=matrix_type)
         w = np.empty(self.n_components, dtype=matrix_type)
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
         explained_variance_ratio = np.empty(self.n_components, dtype=matrix_type)
@@ -99,8 +99,17 @@ class PCA(TruncatedSVD):
         param.whiten = self.whiten
 
         _pca_code = _load_pca_lib()
-        _pca_code(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(X_transformed),
-                   _as_fptr(explained_variance), _as_fptr(explained_variance_ratio), _as_fptr(mean), param)
+        _pca_code(
+            _as_fptr(X),
+            _as_fptr(Q),
+            _as_fptr(w),
+            _as_fptr(U),
+            _as_fptr(X_transformed),
+            _as_fptr(explained_variance),
+            _as_fptr(explained_variance_ratio),
+            _as_fptr(mean),
+            param,
+        )
 
         self._w = w
         self._U = U
@@ -109,10 +118,9 @@ class PCA(TruncatedSVD):
 
         n = X.shape[0]
         # To match sci-kit #TODO Port to cuda?
-        self.explained_variance = self.singular_values_ ** 2 / (n - 1)
+        self.explained_variance = self.singular_values_**2 / (n - 1)
         total_var = np.var(X, ddof=1, axis=0)
-        self.explained_variance_ratio = \
-            self.explained_variance / total_var.sum()
+        self.explained_variance_ratio = self.explained_variance / total_var.sum()
         # self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
@@ -121,20 +129,19 @@ class PCA(TruncatedSVD):
         n_samples, n_features = X.shape
         total_var = np.var(X, ddof=1, axis=0)
         if self.n_components_ < min(n_features, n_samples):
-            self.noise_variance_ = \
-                (total_var.sum() - self.explained_variance_.sum())
-            self.noise_variance_ /= \
-                min(n_features, n_samples) - self.n_components
+            self.noise_variance_ = total_var.sum() - self.explained_variance_.sum()
+            self.noise_variance_ /= min(n_features, n_samples) - self.n_components
         else:
-            self.noise_variance_ = 0.
+            self.noise_variance_ = 0.0
 
         return X_transformed
 
     def _check_double(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
-            self._print_verbose(0, "Detected numeric data format which is not "
-                                   "supported. Casting to np.float32.")
+            self._print_verbose(
+                0, "Detected numeric data format which is not supported. Casting to np.float32."
+            )
             data = np.ascontiguousarray(data, dtype=np.floa32)
         if data.dtype == np.float64:
             self._print_verbose(0, "Detected np.float64 data")
@@ -146,9 +153,10 @@ class PCA(TruncatedSVD):
             data = np.ascontiguousarray(data, dtype=np.float32)
         else:
             raise ValueError(
-                "Unsupported data type %s, "
-                "should be either np.float32 or np.float64" % data.dtype)
+                f"Unsupported data type {data.dtype}, should be either np.float32 or np.float64"
+            )
         return data
+
 
 def _as_dptr(x):
     '''
@@ -158,6 +166,7 @@ def _as_dptr(x):
     '''
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
+
 def _as_fptr(x):
     '''
 
@@ -165,4 +174,3 @@ def _as_fptr(x):
     :return:
     '''
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-
