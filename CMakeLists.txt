@@ -1,25 +1,62 @@
+cmake_minimum_required(VERSION 3.18)
 
-cmake_minimum_required (VERSION 3.5)
-project(dimreduce4gpu)
-find_package(OpenMP)
-find_package(CUDA QUIET REQUIRED)
+project(dimreduce4gpu LANGUAGES CXX CUDA)
 
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--expt-extended-lambda;")
+# ---- Options ----
+# Default CUDA architectures to build for (fatbin). You can override at configure time via:
+#   -DDIMREDUCE4GPU_CUDA_ARCHES="70;75;80;86"
+set(DIMREDUCE4GPU_CUDA_ARCHES "70;75;80;86" CACHE STRING "CUDA architectures to compile for")
 
-include_directories(include)
-file(GLOB_RECURSE SOURCES "src/*" "include/*")
-
-#Set library output directories
-if(MSVC)
-    #With MSVC shared library is considered runtime
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/lib)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/lib)
-else()
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++14")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dimreduce4gpu/lib)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+# If the user hasn't set CMAKE_CUDA_ARCHITECTURES, use the default fatbin list.
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES "${DIMREDUCE4GPU_CUDA_ARCHES}")
 endif()
 
-cuda_add_library(dimreduce4gpu SHARED ${SOURCES})
+# ---- Dependencies ----
+find_package(OpenMP)
+find_package(CUDAToolkit REQUIRED)
 
-target_link_libraries(dimreduce4gpu ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})
+# ---- Sources ----
+file(GLOB_RECURSE DIMREDUCE4GPU_SOURCES CONFIGURE_DEPENDS
+  "src/*"
+  "include/*"
+)
+
+add_library(dimreduce4gpu SHARED ${DIMREDUCE4GPU_SOURCES})
+
+target_include_directories(dimreduce4gpu PUBLIC
+  ${PROJECT_SOURCE_DIR}/include
+)
+
+target_compile_features(dimreduce4gpu PUBLIC cxx_std_14)
+set_target_properties(dimreduce4gpu PROPERTIES
+  CUDA_STANDARD 14
+  CUDA_STANDARD_REQUIRED YES
+  POSITION_INDEPENDENT_CODE ON
+)
+
+target_compile_options(dimreduce4gpu PRIVATE
+  $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>
+)
+
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(dimreduce4gpu PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+target_link_libraries(dimreduce4gpu PRIVATE
+  CUDA::cublas
+  CUDA::cusolver
+  CUDA::cusparse
+)
+
+# ---- Output layout ----
+# Put the built shared library where the Python package expects it.
+set_target_properties(dimreduce4gpu PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dimreduce4gpu/lib
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dimreduce4gpu/lib
+)
+
+# Avoid baking build-path RPATHs into the artifact.
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_RPATH "")
+set(CMAKE_INSTALL_RPATH "")

@@ -54,6 +54,29 @@ except OSError as e:
 print("OK: dlopen succeeded")
 PY
 
+# 6b) Verify expected exported symbols are present.
+EXPECTED_SYMBOLS_FILE="ci/expected_symbols.txt"
+if [[ -f "${EXPECTED_SYMBOLS_FILE}" ]]; then
+  echo "== Exported symbol contract (ci/expected_symbols.txt):"
+  nm -D "${SO_PATH}" | awk '{print $3}' | sort -u > /tmp/dimreduce4gpu_exported_symbols.txt
+
+  missing=0
+  while IFS= read -r sym; do
+    # Allow comments/blank lines.
+    [[ -z "${sym}" ]] && continue
+    [[ "${sym}" =~ ^# ]] && continue
+    if ! grep -Fxq "${sym}" /tmp/dimreduce4gpu_exported_symbols.txt; then
+      echo "ERROR: Missing required exported symbol: ${sym}" >&2
+      missing=1
+    fi
+  done < "${EXPECTED_SYMBOLS_FILE}"
+
+  if [[ "${missing}" -ne 0 ]]; then
+    echo "\nTip: if you renamed C/CUDA entrypoints, update ci/expected_symbols.txt to match." >&2
+    exit 1
+  fi
+fi
+
 # 7) Report whether the environment is GPU-runnable.
 # This should not fail on CPU-only runners; it's informational.
 echo "== CUDA driver/device check (informational):"

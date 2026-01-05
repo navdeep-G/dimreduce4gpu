@@ -1,5 +1,7 @@
 site_name: dimreduce4gpu
 nav:
   - Home: index.md
+  - Compatibility: COMPATIBILITY.md
+  - GPU testing: GPU_TESTING.md
 theme:
   name: material

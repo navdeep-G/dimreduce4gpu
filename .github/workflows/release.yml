@@ -1,0 +1,65 @@
+name: Release (build artifacts)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-artifacts:
+    name: Build wheels + sdist (CUDA 12 build)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build native .so inside CUDA container
+        run: |
+          docker run --rm \
+            -v "${PWD}":/work -w /work \
+            nvidia/cuda:12.4.1-devel-ubuntu22.04 \
+            bash -lc "apt-get update && apt-get install -y --no-install-recommends build-essential cmake git file binutils python3 && \
+                     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+                     cmake --build build -j && \
+                     bash ci/verify_native_so.sh dimreduce4gpu/lib/libdimreduce4gpu.so"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build wheel + sdist
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build wheel setuptools
+          python -m build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-py${{ matrix.python-version }}
+          path: dist/*
+
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-artifacts
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-all
+
+      - name: Create release and upload
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-all/**

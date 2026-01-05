@@ -1,0 +1,5 @@
+# Exported entrypoints the Python bindings expect to exist in libdimreduce4gpu.so.
+# If you change the C/CUDA API, update this file (and the ctypes bindings) together.
+
+pca_float
+truncated_svd_float

@@ -49,6 +49,12 @@ def get_library_path() -> str | None:
     return None
 
 
+def native_library_path() -> Path | None:
+    """Return the resolved library path as a Path, or None."""
+    p = get_library_path()
+    return Path(p) if p is not None else None
+
+
 def native_built() -> bool:
     """True if the native shared library exists and can be dlopen()'d.
 
@@ -152,11 +158,25 @@ def require_native_built() -> str:
     try:
         ctypes.CDLL(path)
     except OSError as e:
+        lower = str(e).lower()
+        hint = ""
+        if "libcuda.so" in lower:
+            hint = (
+                "\n\nHint: NVIDIA driver runtime appears to be missing (libcuda.so.*). "
+                "Install NVIDIA drivers on the host (GPU execution requires them)."
+            )
+        elif "libcublas" in lower or "libcusolver" in lower or "libcusparse" in lower:
+            hint = (
+                "\n\nHint: CUDA toolkit runtime libraries (cublas/cusolver/cusparse) appear to be missing. "
+                "Ensure CUDA is installed and its lib64 directory is on your library search path "
+                "(e.g. LD_LIBRARY_PATH)."
+            )
         raise RuntimeError(
             "dimreduce4gpu found libdimreduce4gpu, but it could not be loaded. "
             "This usually means a required shared library dependency is missing.\n\n"
             f"Path: {path}\n"
             f"Load error: {e}"
+            f"{hint}"
         ) from e
 
     return path

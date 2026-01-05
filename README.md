@@ -78,9 +78,46 @@ ruff format .
 pytest
 ```
 
+### Diagnose native/GPU availability
+
+This repo includes a small CLI to help debug native library loading and GPU runtime availability:
+
+```bash
+dimreduce4gpu-diagnose
+dimreduce4gpu-diagnose --json
+```
+
+The two key checks are:
+- `native_built()`: `.so` exists and can be `dlopen()`'d
+- `native_runnable()`: NVIDIA driver initializes and at least one CUDA device is available
+
+### GPU testing without GitHub GPU runners
+
+GitHub-hosted runners do not provide GPUs by default. This repo therefore:
+- compiles and verifies the `.so` on CPU-only CI (across multiple CUDA toolkit containers)
+- runs true GPU correctness/benchmark jobs only on GPU-capable environments
+
+See `docs/GPU_TESTING.md` for reproducible options (Docker, one-off cloud VM).
+
 ## Benchmarks
 
-See `bench/benchmark_pca.py` for a simple benchmark harness. It will skip if the native library is not built.
+Benchmarks require a GPU-capable environment (where `native_runnable()` is true).
+
+```bash
+python bench/run_benchmarks.py --out bench-results.json
+```
+
+See `docs/GPU_TESTING.md` for suggested ways to run GPU tests/benchmarks without GitHub GPU runners.
+
+## GPU testing without GitHub GPU runners
+
+GitHub-hosted runners do not provide GPUs by default. This repo:
+
+- builds the CUDA `.so` in CI using CUDA toolkit containers
+- verifies it is structurally sound (deps resolve, exports exist, `dlopen` works)
+
+For runtime GPU tests (`pytest` correctness checks, benchmarks), run on any machine with an NVIDIA GPU.
+See `docs/GPU_TESTING.md`.
 
 ## Project hygiene
 

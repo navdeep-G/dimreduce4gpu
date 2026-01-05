@@ -5,6 +5,28 @@ on:
   pull_request:
 
 jobs:
+  cpp-format:
+    name: C/CUDA format (clang-format, advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+          clang-format --version
+
+      - name: Check formatting (advisory)
+        run: |
+          FILES=$(find src include -type f \( -name "*.cu" -o -name "*.cuh" -o -name "*.h" -o -name "*.hpp" -o -name "*.cpp" \))
+          if [ -z "$FILES" ]; then
+            echo "No C/CUDA sources found."
+            exit 0
+          fi
+          # This produces detailed per-file diffs in logs, but does not fail the workflow.
+          clang-format --dry-run --Werror $FILES || true
+
   lint:
     name: Lint (ruff)
     runs-on: ubuntu-latest
@@ -57,8 +79,15 @@ jobs:
   build-native-so:
     name: Build + verify native .so (CUDA compile)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda-image:
+          - nvidia/cuda:11.8.0-devel-ubuntu22.04
+          - nvidia/cuda:12.4.1-devel-ubuntu22.04
+
     container:
-      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+      image: ${{ matrix.cuda-image }}
 
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +102,8 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DDIMREDUCE4GPU_CUDA_ARCHES="70;75;80;86"
 
       - name: Build
         run: |

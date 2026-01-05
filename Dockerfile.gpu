@@ -1,0 +1,28 @@
+# GPU development/test container.
+#
+# Usage (on a machine with NVIDIA Docker + drivers):
+#   docker build -t dimreduce4gpu:dev -f Dockerfile.gpu .
+#   docker run --rm -it --gpus all -v "$PWD":/work -w /work dimreduce4gpu:dev \
+#     bash -lc "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && pytest"
+
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git file binutils \
+    python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --upgrade pip
+
+WORKDIR /work
+
+COPY requirements-dev.txt ./requirements-dev.txt
+COPY requirements.txt ./requirements.txt
+RUN python3 -m pip install -r requirements-dev.txt
+
+COPY . .
+RUN python3 -m pip install -e .
+
+CMD ["bash"]
