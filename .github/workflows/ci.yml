@@ -53,3 +53,34 @@ jobs:
       - name: Run tests
         run: |
           pytest
+
+  build-native-so:
+    name: Build + verify native .so (CUDA compile)
+    runs-on: ubuntu-latest
+    container:
+      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential cmake git file binutils python3
+          cmake --version
+          nvcc --version
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: |
+          cmake --build build -j
+
+      - name: Verify the .so is structurally valid and loadable
+        env:
+          SO_PATH: dimreduce4gpu/lib/libdimreduce4gpu.so
+        run: |
+          bash ci/verify_native_so.sh "$SO_PATH"

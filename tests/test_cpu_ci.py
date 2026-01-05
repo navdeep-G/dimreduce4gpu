@@ -3,12 +3,12 @@ import dimreduce4gpu
 
 def test_import_works_on_cpu_ci():
     # Package should import even when the CUDA shared library isn't built.
-    assert hasattr(dimreduce4gpu, "native_available")
-    assert isinstance(dimreduce4gpu.native_available(), bool)
+    assert hasattr(dimreduce4gpu, "native_built")
+    assert isinstance(dimreduce4gpu.native_built(), bool)
 
 
 def test_require_native_message_is_clear():
-    if dimreduce4gpu.native_available():
+    if dimreduce4gpu.native_built():
         return
 
     try:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import ctypes
 from typing import Callable
 
-from ._native import require_native
+from ._native import require_native_runnable
 
 
 class params(ctypes.Structure):
@@ -23,7 +23,7 @@ class params(ctypes.Structure):
 
 def _load_shared() -> ctypes.CDLL:
     """Load the CUDA shared library with a friendlier error message."""
-    lib_path = require_native()
+    lib_path = require_native_runnable()
 
     # Fix for GOMP weirdness (historical). Harmless if not present.
     try:

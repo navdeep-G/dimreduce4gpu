@@ -1,0 +1,50 @@
+name: GPU Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gpu-tests:
+    name: GPU Tests (native runnable)
+    # This workflow is intended for GPU-capable runners.
+    # For a self-hosted runner, add labels like: self-hosted, linux, x64, gpu
+    runs-on: [self-hosted, linux, x64, gpu]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show GPU + driver info
+        run: |
+          nvidia-smi
+          nvcc --version || true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then python -m pip install -r requirements-dev.txt; fi
+          python -m pip install -e .
+
+      - name: Build native library (.so)
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+
+      - name: Verify native library and CUDA runtime
+        env:
+          SO_PATH: dimreduce4gpu/lib/libdimreduce4gpu.so
+          DIMREDUCE4GPU_LIB_PATH: dimreduce4gpu/lib
+        run: |
+          bash ci/verify_native_so.sh "$SO_PATH"
+
+      - name: Run tests (expects native runnable)
+        env:
+          DIMREDUCE4GPU_LIB_PATH: dimreduce4gpu/lib
+        run: |
+          pytest -q

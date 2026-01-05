@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from dimreduce4gpu import PCA, TruncatedSVD, native_available
+from dimreduce4gpu import PCA, TruncatedSVD, native_built, native_runnable
 
 
 def _svd_reference_pca(X: np.ndarray, n_components: int):
@@ -30,20 +30,28 @@ def _corr_abs(a: np.ndarray, b: np.ndarray) -> float:
     return float(abs(np.corrcoef(a, b)[0, 1]))
 
 
-def _assert_missing_native_raises(callable_):
-    # Always executed in CI if native library isn't present:
-    # ensures failures are *clean* and *actionable*.
+def _assert_raises_runtime(callable_, *, expected_substrings: tuple[str, ...]):
     with pytest.raises(RuntimeError) as excinfo:
         callable_()
     msg = str(excinfo.value).lower()
-    assert ("native" in msg) or ("libdimreduce4gpu" in msg) or ("cuda" in msg)
+    assert any(s in msg for s in expected_substrings)
 
 
 def test_pca_fit_transform_matches_cpu_svd_up_to_sign():
     X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], dtype=np.float32)
 
-    if not native_available():
-        _assert_missing_native_raises(lambda: PCA(n_components=2).fit_transform(X))
+    if not native_built():
+        _assert_raises_runtime(
+            lambda: PCA(n_components=2).fit_transform(X),
+            expected_substrings=("native", "libdimreduce4gpu", "cuda"),
+        )
+        return
+
+    if not native_runnable():
+        _assert_raises_runtime(
+            lambda: PCA(n_components=2).fit_transform(X),
+            expected_substrings=("driver", "libcuda"),
+        )
         return
 
     pca = PCA(n_components=2, algorithm="cusolver")
@@ -70,9 +78,17 @@ def test_truncated_svd_fit_transform_matches_cpu_svd_up_to_sign():
         dtype=np.float32,
     )
 
-    if not native_available():
-        _assert_missing_native_raises(
-            lambda: TruncatedSVD(n_components=2, algorithm="power").fit_transform(X)
+    if not native_built():
+        _assert_raises_runtime(
+            lambda: TruncatedSVD(n_components=2, algorithm="power").fit_transform(X),
+            expected_substrings=("native", "libdimreduce4gpu", "cuda"),
+        )
+        return
+
+    if not native_runnable():
+        _assert_raises_runtime(
+            lambda: TruncatedSVD(n_components=2, algorithm="power").fit_transform(X),
+            expected_substrings=("driver", "libcuda"),
         )
         return
 
