@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 import numpy as np
 
@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
             X = rng.standard_normal((n, d), dtype=np.float32)
             model = cls(n_components=k, **kwargs)
 
-            def run():
+            def run(model=model, X=X):
                 model.fit_transform(X)
 
             sec = _time_it(run, warmup=1, repeats=3)
