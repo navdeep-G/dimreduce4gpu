@@ -22,11 +22,23 @@ def _svd_reference_tsvd(X: np.ndarray, n_components: int):
 
 
 def _corr_abs(a: np.ndarray, b: np.ndarray) -> float:
+    """Correlation magnitude between two 1D vectors (sign-invariant).
+
+    For near-zero vectors (e.g., trailing components on rank-deficient inputs),
+    correlation is numerically unstable; treat both-near-zero as a match.
+    """
     a = a.ravel()
     b = b.ravel()
-    if np.allclose(a, 0) or np.allclose(b, 0):
-        return 1.0 if np.allclose(a, b) else 0.0
+    an = float(np.linalg.norm(a))
+    bn = float(np.linalg.norm(b))
+    eps = 1e-6
+    if an < eps and bn < eps:
+        return 1.0
+    if an < eps or bn < eps:
+        return 0.0
     return float(abs(np.corrcoef(a, b)[0, 1]))
+
+
 
 
 def test_pca_cpu_backend_matches_cpu_svd_reference_up_to_sign() -> None:
