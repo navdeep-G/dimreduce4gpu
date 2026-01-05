@@ -34,8 +34,11 @@ def _load_tsvd_lib():
     lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
 
     if len(lib_path) == 0:
-        print("Could not find shared library path at the following locations:")
-        print(dll_path)
+        raise RuntimeError(
+            "Could not find CUDA native library 'libdimreduce4gpu'. Looked in: "
+            + ", ".join(dll_path)
+            + ". Build the CUDA backend (CMake) or set DIMREDUCE4GPU_LIB_PATH to point to the .so."
+        )
 
     # Fix for GOMP weirdness with CUDA 8.0
     try:
@@ -74,8 +77,11 @@ def _load_pca_lib():
     lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
 
     if len(lib_path) == 0:
-        print("Could not find shared library path at the following locations:")
-        print(dll_path)
+        raise RuntimeError(
+            "Could not find CUDA native library 'libdimreduce4gpu'. Looked in: "
+            + ", ".join(dll_path)
+            + ". Build the CUDA backend (CMake) or set DIMREDUCE4GPU_LIB_PATH to point to the .so."
+        )
 
     # Fix for GOMP weirdness with CUDA 8.0
     try:
