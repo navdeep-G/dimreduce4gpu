@@ -53,8 +53,8 @@ def main(argv: list[str] | None = None) -> int:
     ]
 
     results: list[BenchResult] = []
-    for (name, cls, kwargs) in cases:
-        for (n, d, k) in shapes:
+    for name, cls, kwargs in cases:
+        for n, d, k in shapes:
             X = rng.standard_normal((n, d), dtype=np.float32)
             model = cls(n_components=k, **kwargs)
 
