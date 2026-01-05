@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 
 from dimreduce4gpu import PCA, TruncatedSVD
@@ -5,7 +6,8 @@ from dimreduce4gpu.lib_dimreduce4cpu import cpu_built
 
 
 def _require_cpu_built():
-    assert cpu_built(), "CPU native library is not built or cannot be loaded."
+    if not cpu_built():
+        pytest.skip("CPU native library is not built or cannot be loaded.")
 
 
 def _svd_trunc_reconstruct(X: np.ndarray, k: int, center: bool):

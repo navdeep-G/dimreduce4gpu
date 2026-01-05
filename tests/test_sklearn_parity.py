@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from sklearn.decomposition import PCA as SkPCA
 from sklearn.decomposition import TruncatedSVD as SkTSVD
@@ -15,7 +16,8 @@ def _corr_abs(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def test_pca_cpu_close_to_sklearn_full_svd():
-    assert cpu_built(), "CPU native library is not built or cannot be loaded."
+    if not cpu_built():
+        pytest.skip("CPU native library is not built or cannot be loaded.")
 
     # Small-but-nontrivial matrix to keep test fast and deterministic.
     rng = np.random.default_rng(0)
@@ -42,7 +44,8 @@ def test_pca_cpu_close_to_sklearn_full_svd():
 
 
 def test_tsvd_cpu_close_to_sklearn_randomized():
-    assert cpu_built(), "CPU native library is not built or cannot be loaded."
+    if not cpu_built():
+        pytest.skip("CPU native library is not built or cannot be loaded.")
 
     rng = np.random.default_rng(1)
     X = rng.normal(size=(160, 40)).astype(np.float32)

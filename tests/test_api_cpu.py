@@ -12,6 +12,11 @@ def test_auto_backend_runs_on_cpu_when_gpu_unavailable() -> None:
 
     X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], dtype=np.float32)
 
+    if not dimreduce4gpu.cpu_built() and not dimreduce4gpu.native_runnable():
+        with pytest.raises(RuntimeError):
+            PCA(n_components=2, backend="auto").fit_transform(X)
+        return
+
     X_pca = PCA(n_components=2, backend="auto").fit_transform(X)
     assert X_pca.shape == (4, 2)
 

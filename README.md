@@ -93,3 +93,12 @@ We welcome contributions! Feel free to:
 
 Thank you for using **`dimreduce4gpu`**!
 
+
+
+## CPU backend implementation
+
+See `docs/CPU_BACKEND.md` for a detailed explanation of the CPU PCA/TruncatedSVD algorithms and how parity is tested against scikit-learn.
+
+## Benchmarks
+
+See `docs/BENCHMARKS.md` and `bench/benchmark_cpu_vs_sklearn.py` for CPU performance comparisons against scikit-learn.
