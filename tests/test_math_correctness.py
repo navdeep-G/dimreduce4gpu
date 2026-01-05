@@ -39,8 +39,6 @@ def _corr_abs(a: np.ndarray, b: np.ndarray) -> float:
     return float(abs(np.corrcoef(a, b)[0, 1]))
 
 
-
-
 def test_pca_cpu_backend_matches_cpu_svd_reference_up_to_sign() -> None:
     X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], dtype=np.float32)
 
