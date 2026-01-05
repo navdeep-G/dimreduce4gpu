@@ -64,19 +64,64 @@ def native_built() -> bool:
         return False
 
 
-def native_runnable() -> bool:
-    """True if the native library is built AND the NVIDIA driver library is present.
+def _cuda_driver_device_count() -> tuple[bool, int, str]:
+    """Return (ok, device_count, reason) using the CUDA Driver API.
 
-    This is a best-effort signal that GPU execution is possible. On CI build containers,
-    compilation may succeed but the driver (libcuda.so.1) is typically absent.
+    This checks for:
+      - NVIDIA driver runtime availability (libcuda.so.1)
+      - cuInit success
+      - at least one CUDA device
+
+    It does not execute kernels, but it is a strong signal the environment is capable of GPU execution.
     """
     if not native_built():
-        return False
+        return False, 0, "native library is not built"
+
     try:
-        ctypes.CDLL("libcuda.so.1")
-        return True
-    except OSError:
-        return False
+        libcuda = ctypes.CDLL("libcuda.so.1")
+    except OSError as e:
+        return False, 0, f"NVIDIA driver runtime missing (libcuda.so.1): {e}"
+
+    # int cuInit(unsigned int Flags);
+    cuInit = getattr(libcuda, "cuInit", None)
+    cuDeviceGetCount = getattr(libcuda, "cuDeviceGetCount", None)
+    if cuInit is None or cuDeviceGetCount is None:
+        return False, 0, "CUDA Driver API symbols missing (cuInit/cuDeviceGetCount)"
+
+    cuInit.argtypes = [ctypes.c_uint]
+    cuInit.restype = ctypes.c_int
+
+    cuDeviceGetCount.argtypes = [ctypes.POINTER(ctypes.c_int)]
+    cuDeviceGetCount.restype = ctypes.c_int
+
+    CUDA_SUCCESS = 0
+    CUDA_ERROR_NO_DEVICE = 100
+
+    rc = int(cuInit(0))
+    if rc == CUDA_ERROR_NO_DEVICE:
+        return False, 0, "no CUDA devices detected (driver present, but no GPU available)"
+    if rc != CUDA_SUCCESS:
+        return False, 0, f"cuInit failed with error code {rc}"
+
+    count = ctypes.c_int(0)
+    rc2 = int(cuDeviceGetCount(ctypes.byref(count)))
+    if rc2 != CUDA_SUCCESS:
+        return False, 0, f"cuDeviceGetCount failed with error code {rc2}"
+
+    if count.value <= 0:
+        return False, 0, "no CUDA devices detected (device count is 0)"
+
+    return True, int(count.value), ""
+
+
+def native_runnable() -> bool:
+    """True if the native library is built, loadable, and a CUDA device is available.
+
+    This is stricter than native_built(): it requires the NVIDIA driver runtime and at least
+    one CUDA device (via CUDA Driver API).
+    """
+    ok, _count, _reason = _cuda_driver_device_count()
+    return ok
 
 
 # Backwards-compatible name (historically used by earlier patches/tests).
@@ -121,18 +166,28 @@ def require_native_runnable() -> str:
     """Return the shared library path, or raise a friendly error if GPU can't run."""
     path = require_native_built()
 
-    # If the driver library is missing, GPU execution can't work.
-    try:
-        ctypes.CDLL("libcuda.so.1")
-    except OSError as e:
+    ok, _count, reason = _cuda_driver_device_count()
+    if not ok:
         raise RuntimeError(
-            "dimreduce4gpu native library is present, but the NVIDIA driver runtime "
-            "(libcuda.so.1) is not available in this environment.\n\n"
-            "This environment can compile the CUDA library, but cannot execute GPU code. "
-            "To run GPU computations, use a machine/runner with NVIDIA drivers and a GPU."
-        ) from e
+            "dimreduce4gpu native library is present, but this environment is not able to run GPU code.
+
+"
+            f"Reason: {reason}
+
+"
+            "This environment may be able to compile the CUDA library, but to execute GPU computations you need:
+"
+            "  - NVIDIA drivers installed (libcuda.so.1 available)
+"
+            "  - At least one CUDA-capable GPU device
+"
+            "  - A compatible CUDA runtime/toolkit for your driver
+"
+        )
 
     return path
+
+
 
 
 # Backwards-compatible alias

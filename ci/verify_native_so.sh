@@ -54,4 +54,27 @@ except OSError as e:
 print("OK: dlopen succeeded")
 PY
 
+# 7) Report whether the environment is GPU-runnable.
+# This should not fail on CPU-only runners; it's informational.
+echo "== CUDA driver/device check (informational):"
+python3 - <<'PY'
+import importlib.util
+from pathlib import Path
+
+native_path = Path('dimreduce4gpu') / '_native.py'
+spec = importlib.util.spec_from_file_location('dimreduce4gpu_native', native_path)
+if spec is None or spec.loader is None:
+    raise RuntimeError(f"Unable to load {native_path}")
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+print(f"native_built(): {mod.native_built()}")
+
+ok, count, reason = mod._cuda_driver_device_count()  # intentionally internal for diagnostics
+if ok:
+    print(f"native_runnable(): True (CUDA devices: {count})")
+else:
+    print(f"native_runnable(): False ({reason})")
+PY
+
 echo "== All checks passed."
