@@ -169,20 +169,12 @@ def require_native_runnable() -> str:
     ok, _count, reason = _cuda_driver_device_count()
     if not ok:
         raise RuntimeError(
-            "dimreduce4gpu native library is present, but this environment is not able to run GPU code.
-
-"
-            f"Reason: {reason}
-
-"
-            "This environment may be able to compile the CUDA library, but to execute GPU computations you need:
-"
-            "  - NVIDIA drivers installed (libcuda.so.1 available)
-"
-            "  - At least one CUDA-capable GPU device
-"
-            "  - A compatible CUDA runtime/toolkit for your driver
-"
+            "dimreduce4gpu native library is present, but this environment is not able to run GPU code.\n\n"
+            f"Reason: {reason}\n\n"
+            "This environment may be able to compile the CUDA library, but to execute GPU computations you need:\n"
+            "  - NVIDIA drivers installed (libcuda.so.1 available)\n"
+            "  - At least one CUDA-capable GPU device\n"
+            "  - A compatible CUDA runtime/toolkit for your driver\n"
         )
 
     return path
