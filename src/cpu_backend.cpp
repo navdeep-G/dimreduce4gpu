@@ -135,10 +135,39 @@ SVDResult exact_svd_topk_colmajor(const float* X_col_in, int n, int m, int k) {
 }
 
 // Randomized SVD on X_col (column-major, lda=n). Returns top-k.
+
+static bool ortho_qr_inplace(std::vector<float>& A, int n, int l) {
+  // Orthonormalize A (n x l, column-major) in-place using QR.
+  int M = n;
+  int N = l;
+  int K = std::min(M, N);
+  int lda = n;
+  int info = 0;
+  std::vector<float> tau(static_cast<size_t>(std::max(1, K)));
+  int lwork = -1;
+  float wkopt = 0.0f;
+  sgeqrf_(&M, &N, A.data(), &lda, tau.data(), &wkopt, &lwork, &info);
+  if (info != 0) return false;
+  lwork = static_cast<int>(wkopt);
+  std::vector<float> work(static_cast<size_t>(std::max(1, lwork)));
+  sgeqrf_(&M, &N, A.data(), &lda, tau.data(), work.data(), &lwork, &info);
+  if (info != 0) return false;
+
+  int lwork2 = -1;
+  float wkopt2 = 0.0f;
+  sorgqr_(&M, &N, &K, A.data(), &lda, tau.data(), &wkopt2, &lwork2, &info);
+  if (info != 0) return false;
+  lwork2 = static_cast<int>(wkopt2);
+  work.assign(static_cast<size_t>(std::max(1, lwork2)), 0.0f);
+  sorgqr_(&M, &N, &K, A.data(), &lda, tau.data(), work.data(), &lwork2, &info);
+  if (info != 0) return false;
+  return true;
+}
+
 SVDResult randomized_svd_topk_colmajor(const float* X_col, int n, int m, int k, int n_iter, int random_state) {
   const int min_nm = std::min(n, m);
   const int kk = std::min(k, min_nm);
-  const int oversample = 8;
+  const int oversample = 10;
   const int l = std::min(kk + oversample, min_nm);
 
   std::mt19937 rng(static_cast<uint32_t>(random_state <= 0 ? 12345 : random_state));
@@ -153,14 +182,17 @@ SVDResult randomized_svd_topk_colmajor(const float* X_col, int n, int m, int k, 
   cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, l, m, 1.0f, X_col, n, Omega.data(), m, 0.0f, Y.data(), n);
 
   // Power iterations: Y = (X X^T)^q X Omega
-  for (int it = 0; it < std::max(0, n_iter - 1); ++it) {
+  for (int it = 0; it < std::max(0, n_iter); ++it) {
     // Z = X^T Y => m x l
     std::vector<float> Z(static_cast<size_t>(m) * static_cast<size_t>(l), 0.0f);
     cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, m, l, n, 1.0f, X_col, n, Y.data(), n, 0.0f, Z.data(), m);
     // Y = X Z => n x l
     std::fill(Y.begin(), Y.end(), 0.0f);
     cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, l, m, 1.0f, X_col, n, Z.data(), m, 0.0f, Y.data(), n);
-  }
+  
+    // Normalize to improve numerical stability (similar to sklearn's power_iteration_normalizer).
+    if (!ortho_qr_inplace(Y, n, l)) return {};
+}
 
   // QR factorization of Y to get Q (n x l) in Y
   std::vector<float> tau(static_cast<size_t>(l));
