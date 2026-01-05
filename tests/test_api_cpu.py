@@ -35,7 +35,13 @@ def test_pca_and_tsvd_behavior_without_native_or_driver():
         with pytest.raises(RuntimeError) as e2:
             dimreduce4gpu.TruncatedSVD(n_components=2).fit_transform(X)
         msg2 = str(e2.value).lower()
-        assert ("driver" in msg2) or ("libcuda" in msg2) or ("no cuda" in msg2) or ("no gpu" in msg2) or ("no device" in msg2)
+        assert (
+            ("driver" in msg2)
+            or ("libcuda" in msg2)
+            or ("no cuda" in msg2)
+            or ("no gpu" in msg2)
+            or ("no device" in msg2)
+        )
         return
 
     # Runnable path: construction and execution should work.

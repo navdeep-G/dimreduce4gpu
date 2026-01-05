@@ -180,8 +180,6 @@ def require_native_runnable() -> str:
     return path
 
 
-
-
 # Backwards-compatible alias
 def require_native() -> str:
     return require_native_built()
