@@ -48,3 +48,25 @@ jobs:
           DIMREDUCE4GPU_LIB_PATH: dimreduce4gpu/lib
         run: |
           pytest -q
+
+      - name: GPU smoke test (PCA + TSVD)
+        env:
+          DIMREDUCE4GPU_LIB_PATH: dimreduce4gpu/lib
+        run: |
+          python - <<'PY'
+          import numpy as np
+          import dimreduce4gpu
+          from dimreduce4gpu import PCA, TruncatedSVD
+
+          assert dimreduce4gpu.native_runnable(), "Expected GPU to be runnable on this runner"
+
+          X = np.array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]], dtype=np.float32)
+          y = PCA(n_components=2).fit_transform(X)
+          z = TruncatedSVD(n_components=2, algorithm="power", n_iter=5).fit_transform(X)
+
+          assert y.shape == (4,2)
+          assert z.shape == (4,2)
+          assert np.isfinite(y).all()
+          assert np.isfinite(z).all()
+          print("Smoke test OK")
+          PY

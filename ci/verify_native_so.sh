@@ -3,6 +3,9 @@ set -euo pipefail
 
 SO_PATH="${1:-dimreduce4gpu/lib/libdimreduce4gpu.so}"
 
+# Ensure the CUDA toolkit libraries can be found in CUDA container jobs.
+export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"
+
 echo "== Verifying native shared library: ${SO_PATH}"
 
 # 1) Must exist
@@ -24,6 +27,18 @@ if readelf -d "${SO_PATH}" | egrep -q "RPATH|RUNPATH"; then
     exit 1
   fi
 fi
+
+# 3b) Ensure required exported symbols are present (ctypes entrypoints).
+echo "== Exported symbol contract (ctypes entrypoints):"
+nm -D "${SO_PATH}" 2>/dev/null | egrep -q "\bpca_float\b" || {
+  echo "ERROR: Exported symbol 'pca_float' not found in .so" >&2
+  exit 1
+}
+nm -D "${SO_PATH}" 2>/dev/null | egrep -q "\btruncated_svd_float\b" || {
+  echo "ERROR: Exported symbol 'truncated_svd_float' not found in .so" >&2
+  exit 1
+}
+echo "OK: required symbols found (pca_float, truncated_svd_float)"
 
 # 4) Dependencies must resolve
 echo "== ldd (must not have 'not found'):"

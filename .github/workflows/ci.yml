@@ -84,3 +84,27 @@ jobs:
           SO_PATH: dimreduce4gpu/lib/libdimreduce4gpu.so
         run: |
           bash ci/verify_native_so.sh "$SO_PATH"
+
+  cpp-format:
+    name: C/CUDA format check (clang-format) [non-blocking]
+    runs-on: ubuntu-latest
+    needs: lint
+    continue-on-error: true
+    container:
+      image: nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends clang-format
+      - name: Check formatting
+        run: |
+          FILES=$(find src include -type f \( -name "*.cu" -o -name "*.cuh" -o -name "*.h" -o -name "*.hpp" -o -name "*.cpp" \))
+          if [ -z "$FILES" ]; then
+            echo "No C/CUDA files found.";
+            exit 0;
+          fi
+          clang-format --version
+          clang-format --dry-run --Werror $FILES

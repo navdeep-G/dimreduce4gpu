@@ -1,25 +1,54 @@
+cmake_minimum_required(VERSION 3.18)
 
-cmake_minimum_required (VERSION 3.5)
-project(dimreduce4gpu)
+project(dimreduce4gpu LANGUAGES CXX CUDA)
+
+# ---- Build options ----
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Avoid baking fragile RPATHs into the produced shared library. Users should
+# rely on LD_LIBRARY_PATH / system loader paths for CUDA libs.
+set(CMAKE_SKIP_RPATH TRUE)
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
+set(CMAKE_SKIP_INSTALL_RPATH TRUE)
+
 find_package(OpenMP)
-find_package(CUDA QUIET REQUIRED)
+find_package(CUDAToolkit REQUIRED)
 
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};--expt-extended-lambda;")
+add_library(dimreduce4gpu SHARED)
 
-include_directories(include)
-file(GLOB_RECURSE SOURCES "src/*" "include/*")
+target_compile_options(dimreduce4gpu PRIVATE
+  $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>
+)
 
-#Set library output directories
-if(MSVC)
-    #With MSVC shared library is considered runtime
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/lib)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/lib)
-else()
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++14")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/dimreduce4gpu/lib)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+target_include_directories(dimreduce4gpu PRIVATE
+  ${PROJECT_SOURCE_DIR}/include
+)
+
+file(GLOB_RECURSE DIMREDUCE4GPU_SOURCES
+  "${PROJECT_SOURCE_DIR}/src/*"
+  "${PROJECT_SOURCE_DIR}/include/*"
+)
+target_sources(dimreduce4gpu PRIVATE ${DIMREDUCE4GPU_SOURCES})
+
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(dimreduce4gpu PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-cuda_add_library(dimreduce4gpu SHARED ${SOURCES})
+target_link_libraries(dimreduce4gpu PRIVATE
+  CUDA::cublas
+  CUDA::cusolver
+  CUDA::cusparse
+)
 
-target_link_libraries(dimreduce4gpu ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})
+# ---- Output ----
+# Place the built shared library inside the Python package so it can be loaded
+# at runtime without an install step.
+set_target_properties(dimreduce4gpu PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/dimreduce4gpu/lib"
+  RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/dimreduce4gpu/lib"
+  OUTPUT_NAME "dimreduce4gpu"
+)
