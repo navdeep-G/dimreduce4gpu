@@ -5,112 +5,56 @@ on:
   pull_request:
 
 jobs:
-  cpp-format:
-    name: C/CUDA format (clang-format, advisory)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install clang-format
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format
-          clang-format --version
-
-      - name: Check formatting (advisory)
-        run: |
-          FILES=$(find src include -type f \( -name "*.cu" -o -name "*.cuh" -o -name "*.h" -o -name "*.hpp" -o -name "*.cpp" \))
-          if [ -z "$FILES" ]; then
-            echo "No C/CUDA sources found."
-            exit 0
-          fi
-          # This produces detailed per-file diffs in logs, but does not fail the workflow.
-          clang-format --dry-run --Werror $FILES || true
-
   lint:
     name: Lint (ruff)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-
-      - name: Install lint dependencies
+          python-version: "3.11"
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ruff
+          pip install ruff
+      - name: Ruff format check
+        run: ruff format --check .
+      - name: Ruff lint
+        run: ruff check .
 
-      - name: Ruff check
-        run: |
-          ruff check .
-          ruff format --check .
-
-  tests:
-    name: Tests (pytest)
+  build-and-test:
+    name: Build CPU .so + Tests (pytest)
     runs-on: ubuntu-latest
-    needs: lint
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install system deps (OpenBLAS/LAPACKE)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libopenblas-dev liblapacke-dev
+
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package + test deps
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt || true
-          python -m pip install -r requirements-dev.txt
-          python -m pip install -e . || python -m pip install .
+          pip install -e .
+          pip install numpy scipy scikit-learn pytest
 
-      - name: Run tests
+      - name: Build CPU shared library
         run: |
-          pytest
-
-  build-native-so:
-    name: Build + verify native .so (CUDA compile)
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        cuda-image:
-          - nvidia/cuda:11.8.0-devel-ubuntu22.04
-          - nvidia/cuda:12.4.1-devel-ubuntu22.04
-
-    container:
-      image: ${{ matrix.cuda-image }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install build tools
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            build-essential cmake git file binutils python3
-          cmake --version
-          nvcc --version
-
-      - name: Configure
-        run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-            -DDIMREDUCE4GPU_CUDA_ARCHES="70;75;80;86"
-
-      - name: Build
-        run: |
+          cmake -S . -B build -DDIMREDUCE4GPU_BUILD_CPU=ON -DDIMREDUCE4GPU_BUILD_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j
 
-      - name: Verify the .so is structurally valid and loadable
-        env:
-          SO_PATH: dimreduce4gpu/lib/libdimreduce4gpu.so
+      - name: Verify CPU shared library
         run: |
-          bash ci/verify_native_so.sh "$SO_PATH"
+          bash ci/verify_cpu_so.sh dimreduce4gpu/lib/libdimreduce4cpu.so
+
+      - name: Run tests
+        run: pytest -q

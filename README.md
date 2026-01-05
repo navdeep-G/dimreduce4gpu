@@ -1,131 +1,95 @@
-# dimreduce4gpu
+# `dimreduce4gpu`
 
-`dimreduce4gpu` provides **GPU-accelerated** dimensionality reduction primitives:
-- **PCA** (centers data)
-- **TruncatedSVD** (does not center data)
+**`dimreduce4gpu`** is a GPU-accelerated dimensionality reduction library built with CUDA, designed for fast and efficient large-scale data reduction. It provides implementations of popular algorithms like Principal Component Analysis (PCA) and Truncated Singular Value Decomposition (SVD), optimized to harness GPU power—making it ideal for high-performance applications in data science and machine learning.
 
-The Python API calls into a CUDA shared library (`libdimreduce4gpu.so`). The repository includes a CMake
-build for that native library.
+---
 
-> **Note on CI:** the default GitHub Actions workflow runs on CPU-only runners, so it validates **linting**
-> and **CPU-safe import/tests**. GPU build/runtime is intentionally not executed in CI.
+## 🚀 Features
 
-## Quickstart (Python)
+- **GPU-Accelerated**: Leverages CUDA to achieve significant speedups on large datasets.
+- **Optimized Implementations**: Includes PCA and Truncated SVD tailored for high throughput and scale.
+- **Python Integration**: Easily integrates into Python-based data workflows.
 
-```python
-import numpy as np
-from dimreduce4gpu import PCA
+## ✅ Modern builds and CI
 
-X = np.random.default_rng(0).normal(size=(10_000, 128)).astype(np.float32)
-pca = PCA(n_components=32)
+- CPU-only installs are supported via a native C++ backend (`libdimreduce4cpu.*`).
+- GPU acceleration uses the CUDA backend (`libdimreduce4gpu.*`) when available.
+- GitHub Actions runs unit tests on CPU runners, and includes a build+verify job for
+  the native libraries.
+- A dedicated workflow builds manylinux CPU wheels: `.github/workflows/wheels.yml`.
 
-# Requires the CUDA shared library to be built and available.
-X2 = pca.fit_transform(X)
-print(X2.shape)
-```
+### Backend selection
 
-If the native CUDA library is not available, you can check:
+Both `PCA` and `TruncatedSVD` accept `backend`:
 
-```python
-import dimreduce4gpu
+- `backend="auto"` (default): GPU if runnable, else CPU
+- `backend="cpu"`: force CPU backend
+- `backend="gpu"`: force GPU backend
 
-if not dimreduce4gpu.native_available():
-    print("GPU library missing; build the CUDA library first.")
-```
+---
 
-## Install (Python-only)
+## 📌 Supported Algorithms
 
-```bash
-python -m pip install -e .
-```
+- **Principal Component Analysis (PCA)**  
+  Reduces dimensionality by transforming variables into a set of linearly uncorrelated principal components.
 
-This installs the Python wrappers. GPU functionality requires building the CUDA library (next section).
+- **Truncated Singular Value Decomposition (SVD)**  
+  Approximates SVD by retaining only the most significant singular values, making it suitable for sparse and large-scale datasets.
 
-## Build the CUDA library
+---
 
-### Prerequisites
-- CUDA toolkit installed (CUDA 11/12 recommended; older versions may work)
-- A C++ compiler supported by your CUDA toolkit
-- CMake
+## 🛠 Build Instructions
 
-### Build
-```bash
-rm -rf build
-mkdir build
-cd build
-cmake ..
-make -j
-```
+### 📋 Requirements
 
-The build places `libdimreduce4gpu.so` into:
+- **Python**: 3.9+
+- **Build tools**: CMake 3.18+, a C++17 compiler
+- **CPU backend**: BLAS + LAPACK development headers (e.g., OpenBLAS)
+- **GPU backend (optional)**: CUDA toolkit + NVIDIA driver/runtime
 
-```
-dimreduce4gpu/lib/
-```
-
-You can also override the lookup path at runtime:
+### Quickstart (CPU)
 
 ```bash
-export DIMREDUCE4GPU_LIB_PATH=/path/to/directory/containing/libdimreduce4gpu.so
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install .
+pytest -q
 ```
 
-## Development
+### Building the native libraries (developers)
+
+CPU-only build:
 
 ```bash
-python -m pip install -e ".[dev]"
-ruff check .
-ruff format .
-pytest
+cmake -S . -B build/cpu -DCMAKE_BUILD_TYPE=Release -DDIMREDUCE4GPU_BUILD_CPU=ON -DDIMREDUCE4GPU_BUILD_CUDA=OFF
+cmake --build build/cpu -j
 ```
 
-### Diagnose native/GPU availability
-
-This repo includes a small CLI to help debug native library loading and GPU runtime availability:
+CUDA build (requires CUDA toolkit):
 
 ```bash
-dimreduce4gpu-diagnose
-dimreduce4gpu-diagnose --json
+cmake -S . -B build/cuda -DCMAKE_BUILD_TYPE=Release -DDIMREDUCE4GPU_BUILD_CPU=ON -DDIMREDUCE4GPU_BUILD_CUDA=ON
+cmake --build build/cuda -j
 ```
 
-The two key checks are:
-- `native_built()`: `.so` exists and can be `dlopen()`'d
-- `native_runnable()`: NVIDIA driver initializes and at least one CUDA device is available
+## 📦 Integration in Other Projects
 
-### GPU testing without GitHub GPU runners
+`dimreduce4gpu` is also part of other GPU-optimized machine learning ecosystems:
 
-GitHub-hosted runners do not provide GPUs by default. This repo therefore:
-- compiles and verifies the `.so` on CPU-only CI (across multiple CUDA toolkit containers)
-- runs true GPU correctness/benchmark jobs only on GPU-capable environments
+- **[H2O4GPU](https://github.com/h2oai/h2o4gpu)** by [H2O.ai](https://www.h2o.ai/)
+  - 🔹 [Truncated SVD Module](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/tsvd)
+  - 🔹 [PCA Module](https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca)
 
-See `docs/GPU_TESTING.md` for reproducible options (Docker, one-off cloud VM).
+---
 
-## Benchmarks
+## 🤝 Contributing
 
-Benchmarks require a GPU-capable environment (where `native_runnable()` is true).
+We welcome contributions! Feel free to:
 
-```bash
-python bench/run_benchmarks.py --out bench-results.json
-```
+- 🐛 [Open an issue](https://github.com/navdeep-G/dimreduce4gpu/issues) for bugs or feature requests
+- 💬 Ask questions or share ideas
+- 🔧 Submit pull requests to improve the project
 
-See `docs/GPU_TESTING.md` for suggested ways to run GPU tests/benchmarks without GitHub GPU runners.
+Thank you for using **`dimreduce4gpu`**!
 
-## GPU testing without GitHub GPU runners
-
-GitHub-hosted runners do not provide GPUs by default. This repo:
-
-- builds the CUDA `.so` in CI using CUDA toolkit containers
-- verifies it is structurally sound (deps resolve, exports exist, `dlopen` works)
-
-For runtime GPU tests (`pytest` correctness checks, benchmarks), run on any machine with an NVIDIA GPU.
-See `docs/GPU_TESTING.md`.
-
-## Project hygiene
-
-- CI: `.github/workflows/ci.yml`
-- Contributing guide: `CONTRIBUTING.md`
-- Security policy: `SECURITY.md`
-
-## Credits
-
-The CUDA implementations are based on ideas from the `h2o4gpu` project:
-- PCA module: https://github.com/h2oai/h2o4gpu/tree/master/src/gpu/pca

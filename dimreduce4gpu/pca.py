@@ -1,106 +1,79 @@
-import ctypes
+from __future__ import annotations
+
+from typing import Literal, Optional
 
 import numpy as np
 
+from ._backend import select_backend
+from .lib_dimreduce4cpu import _load_pca_cpu_lib
 from .lib_dimreduce4gpu import _load_pca_lib, params
-from .truncated_svd import TruncatedSVD
+from .truncated_svd import TruncatedSVD, _as_fptr
+
+Backend = Literal["auto", "gpu", "cpu"]
 
 
 class PCA(TruncatedSVD):
-    """Principal Component Analysis (PCA)
+    """PCA implemented via SVD with native GPU or CPU backend."""
 
-    Dimensionality reduction using truncated Singular Value Decomposition
-    for GPU
+    def __init__(
+        self,
+        n_components: int = 2,
+        algorithm: str = "cusolver",
+        n_iter: int = 5,
+        random_state: Optional[int] = None,
+        tol: float = 1e-5,
+        verbose: bool = False,
+        gpu_id: int = 0,
+        whiten: bool = False,
+        backend: Backend = "auto",
+    ) -> None:
+        super().__init__(
+            n_components=n_components,
+            algorithm=algorithm,
+            n_iter=n_iter,
+            random_state=random_state,
+            tol=tol,
+            verbose=verbose,
+            gpu_id=gpu_id,
+            backend=backend,
+        )
+        self.whiten = bool(whiten)
+        self.mean_: Optional[np.ndarray] = None
 
-    This implementation uses the Cusolver implementation of the truncated SVD.
-    Contrary to SVD, this estimator does center the data before computing
-    the singular value decomposition.
-
-    Parameters
-    ----------
-    n_components: int, Default=2
-        Desired dimensionality of output data
-
-    whiten : bool, optional
-        When True (False by default) the `components_` vectors are multiplied
-        by the square root of (n_samples) and divided by the singular values to
-        ensure uncorrelated outputs with unit component-wise variances.
-
-        Whitening will remove some information from the transformed signal
-        (the relative variance scales of the components) but can sometime
-        improve the predictive accuracy of the downstream estimators by
-        making their data respect some hard-wired assumptions.
-
-    verbose: bool
-        Verbose or not
-
-    gpu_id : int, optional, default: 0
-        ID of the GPU on which the algorithm should run.
-    """
-
-    def __init__(self, n_components=2, whiten=False, verbose=0, gpu_id=0):
-        super().__init__(n_components)
-        self.whiten = whiten
-        self.n_components_ = n_components
-        self.mean_ = None
-        self.noise_variance_ = None
-        self.algorithm = "cusolver"
-        self.verbose = verbose
-        self.gpu_id = gpu_id
-
-    def fit(self, X):
-        """Fit Principal Components Analysis on matrix X.
-
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
-                  Training data.
-
-        :returns self : object
-
-        """
-        self.fit_transform(X)
-        return self
-
-    def fit_transform(self, X):
-        """Fit Principal Components Analysis on matrix X and perform dimensionality reduction on X.
-        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
-                  Training data.
-        :param y : Ignored
-               For ScikitLearn compatibility
-        :returns X_new : array, shape (n_samples, n_components)
-                         Reduced version of X. This will always be a
-                         dense array.
-        """
+    def fit_transform(self, X: np.ndarray) -> np.ndarray:
         import scipy
 
-        # SciPy 1.11+ deprecates the nested namespace `scipy.sparse.csr.csr_matrix`.
         if isinstance(X, scipy.sparse.csr_matrix):
             X = X.toarray()
 
-        X = self._check_double(X)
-        matrix_type = np.float64 if self.double_precision == 1 else np.float32
-        X = np.asfortranarray(X, dtype=matrix_type)
-        Q = np.empty((self.n_components, X.shape[1]), dtype=matrix_type)
-        U = np.empty((X.shape[0], self.n_components), dtype=matrix_type)
-        w = np.empty(self.n_components, dtype=matrix_type)
-        explained_variance = np.empty(self.n_components, dtype=matrix_type)
-        explained_variance_ratio = np.empty(self.n_components, dtype=matrix_type)
-        mean = np.empty(X.shape[1], dtype=matrix_type)
-        X_transformed = np.empty((U.shape[0], self.n_components), dtype=matrix_type)
+        X = np.ascontiguousarray(X, dtype=np.float32)
+        n, m = X.shape
+        k = min(self.n_components, n, m)
 
-        param = params()
-        param.X_m = X.shape[0]
-        param.X_n = X.shape[1]
-        param.k = self.n_components
-        param.algorithm = self.algorithm.encode('utf-8')
-        param.n_iter = self.n_iter
-        param.random_state = self.random_state
-        param.tol = self.tol
-        param.verbose = 1 if self.verbose else 0
-        param.gpu_id = self.gpu_id
-        param.whiten = self.whiten
+        Q = np.zeros((k, m), dtype=np.float32)
+        w = np.zeros((k,), dtype=np.float32)
+        U = np.zeros((n, k), dtype=np.float32)
+        X_transformed = np.zeros((n, k), dtype=np.float32)
+        explained_variance = np.zeros((k,), dtype=np.float32)
+        explained_variance_ratio = np.zeros((k,), dtype=np.float32)
+        mean = np.zeros((m,), dtype=np.float32)
 
-        _pca_code = _load_pca_lib()
-        _pca_code(
+        p = params()
+        p.X_n = n
+        p.X_m = m
+        p.k = k
+        p.algorithm = self.algorithm.encode("utf-8")
+        p.n_iter = self.n_iter
+        p.random_state = self.random_state
+        p.tol = float(self.tol)
+        p.verbose = 1 if self.verbose else 0
+        p.gpu_id = self.gpu_id
+        p.whiten = bool(self.whiten)
+
+        backend = select_backend(self.backend)
+        fn = _load_pca_cpu_lib() if backend == "cpu" else _load_pca_lib()
+
+        fn(
             _as_fptr(X),
             _as_fptr(Q),
             _as_fptr(w),
@@ -109,69 +82,13 @@ class PCA(TruncatedSVD):
             _as_fptr(explained_variance),
             _as_fptr(explained_variance_ratio),
             _as_fptr(mean),
-            param,
+            p,
         )
 
+        self._Q = Q
         self._w = w
         self._U = U
-        self._Q = Q
-        self._X = X
-
-        n = X.shape[0]
-        # To match sci-kit #TODO Port to cuda?
-        self.explained_variance = self.singular_values_**2 / (n - 1)
-        total_var = np.var(X, ddof=1, axis=0)
-        self.explained_variance_ratio = self.explained_variance / total_var.sum()
-        # self.explained_variance_ratio = explained_variance_ratio
+        self.explained_variance_ = explained_variance
+        self.explained_variance_ratio_ = explained_variance_ratio
         self.mean_ = mean
-
-        # TODO noise_variance_ calculation
-        # can be done inside lib.pca if a bottleneck
-        n_samples, n_features = X.shape
-        total_var = np.var(X, ddof=1, axis=0)
-        if self.n_components_ < min(n_features, n_samples):
-            self.noise_variance_ = total_var.sum() - self.explained_variance_.sum()
-            self.noise_variance_ /= min(n_features, n_samples) - self.n_components
-        else:
-            self.noise_variance_ = 0.0
-
         return X_transformed
-
-    def _check_double(self, data, convert=True):
-        """Transform input data into a type which can be passed into C land."""
-        if convert and data.dtype != np.float64 and data.dtype != np.float32:
-            self._print_verbose(
-                0, "Detected numeric data format which is not supported. Casting to np.float32."
-            )
-            data = np.ascontiguousarray(data, dtype=np.floa32)
-        if data.dtype == np.float64:
-            self._print_verbose(0, "Detected np.float64 data")
-            self.double_precision = 1
-            data = np.ascontiguousarray(data, dtype=np.float64)
-        elif data.dtype == np.float32:
-            self._print_verbose(0, "Detected np.float32 data")
-            self.double_precision = 0
-            data = np.ascontiguousarray(data, dtype=np.float32)
-        else:
-            raise ValueError(
-                f"Unsupported data type {data.dtype}, should be either np.float32 or np.float64"
-            )
-        return data
-
-
-def _as_dptr(x):
-    '''
-
-    :param x:
-    :return:
-    '''
-    return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-
-
-def _as_fptr(x):
-    '''
-
-    :param x:
-    :return:
-    '''
-    return x.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
