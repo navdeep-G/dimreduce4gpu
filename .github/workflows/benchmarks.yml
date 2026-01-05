@@ -1,0 +1,50 @@
+name: Benchmarks (GPU)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 1"  # Mondays 08:00 UTC
+
+jobs:
+  benchmarks:
+    name: Run GPU benchmarks
+    runs-on: [self-hosted, linux, x64, gpu]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GPU info
+        run: |
+          nvidia-smi || true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -e . || python -m pip install .
+
+      - name: Build native .so
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+
+      - name: Verify native .so
+        env:
+          SO_PATH: dimreduce4gpu/lib/libdimreduce4gpu.so
+        run: |
+          bash ci/verify_native_so.sh "$SO_PATH"
+
+      - name: Run benchmarks
+        run: |
+          python bench/run_benchmarks.py --out bench_results.json
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench_results
+          path: bench_results.json

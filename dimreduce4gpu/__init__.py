@@ -11,7 +11,10 @@ from ._native import (
 from .pca import PCA
 from .truncated_svd import TruncatedSVD
 
+__version__ = "0.1.0"
+
 __all__ = [
+    "__version__",
     "PCA",
     "TruncatedSVD",
     "native_available",  # backwards-compat: built & dlopen'able
