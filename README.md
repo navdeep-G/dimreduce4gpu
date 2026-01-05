@@ -7,17 +7,8 @@
 The Python API calls into a CUDA shared library (`libdimreduce4gpu.so`). The repository includes a CMake
 build for that native library.
 
-## What CI covers
-
-The default GitHub Actions workflow validates as much as possible without a GPU:
-
-- **Linting & unit tests** on CPU-only runners
-- **CUDA compilation** of `libdimreduce4gpu.so` (in a CUDA toolkit container)
-- **Native artifact verification**: the `.so` exists, is a valid ELF shared library, dependencies resolve,
-  required exported symbols are present, and the library can be `dlopen`'d.
-
-GPU kernel execution (numerical correctness on-device) is validated via an **optional GPU-only workflow**
-that you can run on a GPU runner.
+> **Note on CI:** the default GitHub Actions workflow runs on CPU-only runners, so it validates **linting**
+> and **CPU-safe import/tests**. GPU build/runtime is intentionally not executed in CI.
 
 ## Quickstart (Python)
 
@@ -33,15 +24,13 @@ X2 = pca.fit_transform(X)
 print(X2.shape)
 ```
 
-If the native CUDA library is not available or the environment cannot run GPU code, you can check:
+If the native CUDA library is not available, you can check:
 
 ```python
 import dimreduce4gpu
 
-if not dimreduce4gpu.native_built():
-    print("GPU library missing; build libdimreduce4gpu.so first.")
-elif not dimreduce4gpu.native_runnable():
-    print("GPU library is present, but CUDA driver/GPU is not available in this environment.")
+if not dimreduce4gpu.native_available():
+    print("GPU library missing; build the CUDA library first.")
 ```
 
 ## Install (Python-only)
@@ -51,18 +40,6 @@ python -m pip install -e .
 ```
 
 This installs the Python wrappers. GPU functionality requires building the CUDA library (next section).
-
-## Wheels (GPU)
-
-This repo includes a release workflow that can build **platform-specific** wheels
-containing `libdimreduce4gpu.so` under `dimreduce4gpu/lib/`.
-
-Notes:
-
-- These wheels are **not universal** (they are platform-tagged).
-- They expect CUDA runtime libraries (`libcublas`, `libcusolver`, `libcusparse`) to
-  be available at runtime (common path: `/usr/local/cuda/lib64`).
-- GPU execution requires NVIDIA drivers and a CUDA-capable GPU.
 
 ## Build the CUDA library
 
@@ -76,8 +53,8 @@ Notes:
 rm -rf build
 mkdir build
 cd build
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
+cmake ..
+make -j
 ```
 
 The build places `libdimreduce4gpu.so` into:
@@ -101,19 +78,46 @@ ruff format .
 pytest
 ```
 
+### Diagnose native/GPU availability
+
+This repo includes a small CLI to help debug native library loading and GPU runtime availability:
+
+```bash
+dimreduce4gpu-diagnose
+dimreduce4gpu-diagnose --json
+```
+
+The two key checks are:
+- `native_built()`: `.so` exists and can be `dlopen()`'d
+- `native_runnable()`: NVIDIA driver initializes and at least one CUDA device is available
+
+### GPU testing without GitHub GPU runners
+
+GitHub-hosted runners do not provide GPUs by default. This repo therefore:
+- compiles and verifies the `.so` on CPU-only CI (across multiple CUDA toolkit containers)
+- runs true GPU correctness/benchmark jobs only on GPU-capable environments
+
+See `docs/GPU_TESTING.md` for reproducible options (Docker, one-off cloud VM).
+
 ## Benchmarks
 
-- `bench/benchmark_pca.py` is a minimal example.
-- `bench/run_benchmarks.py` is a benchmark harness that writes JSON results.
+Benchmarks require a GPU-capable environment (where `native_runnable()` is true).
 
-There is an optional GPU-runner workflow (`.github/workflows/benchmarks.yml`) that runs benchmarks on a schedule.
+```bash
+python bench/run_benchmarks.py --out bench-results.json
+```
 
-## Releases and wheels
+See `docs/GPU_TESTING.md` for suggested ways to run GPU tests/benchmarks without GitHub GPU runners.
 
-Tagging a release (e.g. `v0.1.0`) triggers a workflow that builds platform wheels containing the `.so` and attaches
-them to the GitHub Release.
+## GPU testing without GitHub GPU runners
 
-These wheels are **Linux x86_64** and require a compatible CUDA runtime environment (driver + cuBLAS/cuSOLVER/cuSPARSE).
+GitHub-hosted runners do not provide GPUs by default. This repo:
+
+- builds the CUDA `.so` in CI using CUDA toolkit containers
+- verifies it is structurally sound (deps resolve, exports exist, `dlopen` works)
+
+For runtime GPU tests (`pytest` correctness checks, benchmarks), run on any machine with an NVIDIA GPU.
+See `docs/GPU_TESTING.md`.
 
 ## Project hygiene
 

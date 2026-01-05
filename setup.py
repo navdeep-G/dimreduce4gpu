@@ -1,23 +1,22 @@
-"""Setuptools entrypoint.
-
-Most configuration lives in ``setup.cfg`` / ``pyproject.toml``.
-
-This project ships a native CUDA shared library (``libdimreduce4gpu.so``) as
-*package data* under ``dimreduce4gpu/lib/``. Wheels must therefore be marked as
-*non-pure* so installers don't treat them as universal.
-"""
-
 from __future__ import annotations
 
 from setuptools import setup
-from setuptools.dist import Distribution
 
 
-class BinaryDistribution(Distribution):
-    """Distribution that contains platform-specific binaries."""
+# ---- Wheel tagging ----
+# This package ships a prebuilt native shared library (libdimreduce4gpu.so) as package data.
+# Without this override, setuptools/wheel may incorrectly mark the wheel as "pure" (py3-none-any).
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
-    def has_ext_modules(self) -> bool:
-        return True
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            super().finalize_options()
+            self.root_is_pure = False
+
+    cmdclass = {"bdist_wheel": bdist_wheel}
+except Exception:
+    cmdclass = {}
 
 
-setup(distclass=BinaryDistribution)
+setup(cmdclass=cmdclass)

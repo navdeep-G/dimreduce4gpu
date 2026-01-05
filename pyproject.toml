@@ -34,6 +34,9 @@ Homepage = "https://github.com/navdeep-G/dimreduce4gpu"
 Repository = "https://github.com/navdeep-G/dimreduce4gpu"
 Issues = "https://github.com/navdeep-G/dimreduce4gpu/issues"
 
+[project.scripts]
+dimreduce4gpu-diagnose = "dimreduce4gpu.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8",

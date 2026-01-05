@@ -3,9 +3,6 @@ set -euo pipefail
 
 SO_PATH="${1:-dimreduce4gpu/lib/libdimreduce4gpu.so}"
 
-# Ensure the CUDA toolkit libraries can be found in CUDA container jobs.
-export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"
-
 echo "== Verifying native shared library: ${SO_PATH}"
 
 # 1) Must exist
@@ -27,18 +24,6 @@ if readelf -d "${SO_PATH}" | egrep -q "RPATH|RUNPATH"; then
     exit 1
   fi
 fi
-
-# 3b) Ensure required exported symbols are present (ctypes entrypoints).
-echo "== Exported symbol contract (ctypes entrypoints):"
-nm -D "${SO_PATH}" 2>/dev/null | egrep -q "\bpca_float\b" || {
-  echo "ERROR: Exported symbol 'pca_float' not found in .so" >&2
-  exit 1
-}
-nm -D "${SO_PATH}" 2>/dev/null | egrep -q "\btruncated_svd_float\b" || {
-  echo "ERROR: Exported symbol 'truncated_svd_float' not found in .so" >&2
-  exit 1
-}
-echo "OK: required symbols found (pca_float, truncated_svd_float)"
 
 # 4) Dependencies must resolve
 echo "== ldd (must not have 'not found'):"
@@ -68,6 +53,29 @@ except OSError as e:
     raise
 print("OK: dlopen succeeded")
 PY
+
+# 6b) Verify expected exported symbols are present.
+EXPECTED_SYMBOLS_FILE="ci/expected_symbols.txt"
+if [[ -f "${EXPECTED_SYMBOLS_FILE}" ]]; then
+  echo "== Exported symbol contract (ci/expected_symbols.txt):"
+  nm -D "${SO_PATH}" | awk '{print $3}' | sort -u > /tmp/dimreduce4gpu_exported_symbols.txt
+
+  missing=0
+  while IFS= read -r sym; do
+    # Allow comments/blank lines.
+    [[ -z "${sym}" ]] && continue
+    [[ "${sym}" =~ ^# ]] && continue
+    if ! grep -Fxq "${sym}" /tmp/dimreduce4gpu_exported_symbols.txt; then
+      echo "ERROR: Missing required exported symbol: ${sym}" >&2
+      missing=1
+    fi
+  done < "${EXPECTED_SYMBOLS_FILE}"
+
+  if [[ "${missing}" -ne 0 ]]; then
+    echo "\nTip: if you renamed C/CUDA entrypoints, update ci/expected_symbols.txt to match." >&2
+    exit 1
+  fi
+fi
 
 # 7) Report whether the environment is GPU-runnable.
 # This should not fail on CPU-only runners; it's informational.

@@ -1,5 +1,9 @@
 BasedOnStyle: LLVM
 IndentWidth: 2
+TabWidth: 2
+UseTab: Never
 ColumnLimit: 100
-AllowShortFunctionsOnASingleLine: Inline
-SortIncludes: true
+BreakBeforeBraces: Allman
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+SortIncludes: false

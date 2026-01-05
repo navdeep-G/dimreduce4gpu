@@ -1,0 +1,14 @@
+services:
+  dimreduce4gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    working_dir: /work
+    volumes:
+      - .:/work
+    # Requires NVIDIA Container Toolkit
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
