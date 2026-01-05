@@ -55,36 +55,32 @@ jobs:
           pytest
 
   build-native-so:
-    name: Build native .so (CUDA compile)
+    name: Build + verify native .so (CUDA compile)
     runs-on: ubuntu-latest
-
-    # Use a CUDA "devel" container so nvcc is available.
-    # Compiling does not require a GPU.
     container:
       image: nvidia/cuda:12.4.1-devel-ubuntu22.04
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install build tools
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            build-essential cmake git file binutils
+            build-essential cmake git file binutils python3
           cmake --version
           nvcc --version
-      - name: Configure (CMake)
+
+      - name: Configure
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
       - name: Build
         run: |
           cmake --build build -j
-      - name: Verify .so exists where expected
+
+      - name: Verify the .so is structurally valid and loadable
+        env:
+          SO_PATH: dimreduce4gpu/lib/libdimreduce4gpu.so
         run: |
-          test -f dimreduce4gpu/lib/libdimreduce4gpu.so
-          ls -lh dimreduce4gpu/lib/libdimreduce4gpu.so
-      - name: Sanity check the artifact is a shared library (ELF)
-        run: |
-          file dimreduce4gpu/lib/libdimreduce4gpu.so
-          readelf -h dimreduce4gpu/lib/libdimreduce4gpu.so | grep -E "Type:\s+DYN"
+          bash ci/verify_native_so.sh "$SO_PATH"
