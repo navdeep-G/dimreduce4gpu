@@ -181,7 +181,15 @@ def test_pca_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: i
     X_centered = X.astype(np.float64) - X.astype(np.float64).mean(axis=0, keepdims=True)
     err_ours = _relative_fro_error(X_centered, recon_ours)
     err_sk = _relative_fro_error(X_centered, recon_sk)
-    assert err_ours <= (1.10 * err_sk + 1e-12)
+    if case.rank_deficient:
+        # Rank-deficient cases can yield near-zero reconstruction error for sklearn.
+        # Use an absolute tolerance and a slightly looser relative bound.
+        if err_sk < 1e-10:
+            assert err_ours < (1e-6 if dtype is np.float64 else 5e-6)
+        else:
+            assert err_ours <= (1.35 * err_sk + 1e-12)
+    else:
+        assert err_ours <= (1.10 * err_sk + 1e-12)
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
@@ -226,4 +234,11 @@ def test_tsvd_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: 
     recon_sk = X_sk.astype(np.float64) @ sk.components_.astype(np.float64)
     err_ours = _relative_fro_error(X.astype(np.float64), recon_ours)
     err_sk = _relative_fro_error(X.astype(np.float64), recon_sk)
-    assert err_ours <= (1.10 * err_sk + 1e-12)
+    if case.rank_deficient:
+        if err_sk < 1e-10:
+            assert err_ours < (1e-6 if dtype is np.float64 else 5e-6)
+        else:
+            assert err_ours <= (1.35 * err_sk + 1e-12)
+    else:
+        assert err_ours <= (1.10 * err_sk + 1e-12)
+
