@@ -1,9 +1,6 @@
-from __future__ import annotations
-
 import ctypes
-from typing import Callable
-
-from ._native import require_native_runnable
+import os
+import sys
 
 
 class params(ctypes.Structure):
@@ -21,49 +18,88 @@ class params(ctypes.Structure):
     ]
 
 
-def _load_shared() -> ctypes.CDLL:
-    """Load the CUDA shared library with a friendlier error message."""
-    lib_path = require_native_runnable()
+def _load_tsvd_lib():
+    curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    dll_path = [
+        os.path.join(sys.prefix, "dimreduce4gpu"),
+        curr_path,
+        os.path.join(curr_path, "lib"),
+    ]
 
-    # Fix for GOMP weirdness (historical). Harmless if not present.
+    if os.name == "nt":
+        dll_path = [os.path.join(p, "dimreduce4gpu.dll") for p in dll_path]
+    else:
+        dll_path = [os.path.join(p, "libdimreduce4gpu.so") for p in dll_path]
+
+    lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
+
+    if len(lib_path) == 0:
+        raise RuntimeError(
+            "Could not find CUDA native library 'libdimreduce4gpu'. Looked in: "
+            + ", ".join(dll_path)
+            + ". Build the CUDA backend (CMake) or set DIMREDUCE4GPU_LIB_PATH to point to the .so."
+        )
+
+    # Fix for GOMP weirdness with CUDA 8.0
     try:
         ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
     except Exception:
         pass
-
-    return ctypes.cdll.LoadLibrary(lib_path)
-
-
-def _load_tsvd_lib() -> Callable:
-    """Return the TruncatedSVD entry point (float32)."""
-    mod = _load_shared()
-    fn = mod.truncated_svd_float
-    fn.argtypes = [
-        ctypes.POINTER(ctypes.c_float),  # X
-        ctypes.POINTER(ctypes.c_float),  # Q
-        ctypes.POINTER(ctypes.c_float),  # w
-        ctypes.POINTER(ctypes.c_float),  # U
-        ctypes.POINTER(ctypes.c_float),  # X_transformed
-        ctypes.POINTER(ctypes.c_float),  # explained_variance
-        ctypes.POINTER(ctypes.c_float),  # explained_variance_ratio
+    _mod = ctypes.cdll.LoadLibrary(lib_path[0])
+    _tsvd_code = _mod.truncated_svd_float
+    _tsvd_code.argtypes = [
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
         params,
     ]
-    return fn
+
+    return _tsvd_code
 
 
-def _load_pca_lib() -> Callable:
-    """Return the PCA entry point (float32)."""
-    mod = _load_shared()
-    fn = mod.pca_float
-    fn.argtypes = [
-        ctypes.POINTER(ctypes.c_float),  # X
-        ctypes.POINTER(ctypes.c_float),  # Q
-        ctypes.POINTER(ctypes.c_float),  # w
-        ctypes.POINTER(ctypes.c_float),  # U
-        ctypes.POINTER(ctypes.c_float),  # X_transformed
-        ctypes.POINTER(ctypes.c_float),  # explained_variance
-        ctypes.POINTER(ctypes.c_float),  # explained_variance_ratio
-        ctypes.POINTER(ctypes.c_float),  # mean
+def _load_pca_lib():
+    curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    dll_path = [
+        os.path.join(sys.prefix, "dimreduce4gpu"),
+        os.path.join(curr_path, "lib"),
+        os.path.join(curr_path, "../lib/"),
+    ]
+
+    if os.name == "nt":
+        dll_path = [os.path.join(p, "dimreduce4gpu.dll") for p in dll_path]
+    else:
+        dll_path = [os.path.join(p, "libdimreduce4gpu.so") for p in dll_path]
+
+    lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
+
+    if len(lib_path) == 0:
+        raise RuntimeError(
+            "Could not find CUDA native library 'libdimreduce4gpu'. Looked in: "
+            + ", ".join(dll_path)
+            + ". Build the CUDA backend (CMake) or set DIMREDUCE4GPU_LIB_PATH to point to the .so."
+        )
+
+    # Fix for GOMP weirdness with CUDA 8.0
+    try:
+        ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
+    except Exception:
+        pass
+    _mod = ctypes.cdll.LoadLibrary(lib_path[0])
+    _pca_code = _mod.pca_float
+    _pca_code.argtypes = [
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
         params,
     ]
-    return fn
+
+    return _pca_code

@@ -1,0 +1,35 @@
+name: Benchmarks (CPU)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cpu-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install numpy scipy scikit-learn pytest
+
+      - name: Build CPU shared library
+        run: |
+          cmake -S . -B build -DDIMREDUCE4GPU_BUILD_CPU=ON -DDIMREDUCE4GPU_BUILD_CUDA=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+          bash ci/verify_cpu_so.sh dimreduce4gpu/lib/libdimreduce4cpu.so
+
+      - name: Run benchmark
+        run: |
+          python bench/benchmark_cpu_vs_sklearn.py --n 2000 --m 256 --k 64 --dtype float32 --repeats 5 --warmup 1 --out bench_results.json
+
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: bench_results.json

@@ -1,0 +1,63 @@
+name: Build wheels (CPU)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-wheels:
+    name: Build wheels (manylinux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.20.0
+        env:
+          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
+          CIBW_SKIP: "*-musllinux_* pp*"
+          CIBW_ARCHS_LINUX: "x86_64"
+          # Install CPU linear algebra deps inside the manylinux container.
+          CIBW_BEFORE_ALL_LINUX: >
+            yum install -y openblas-devel lapack-devel gcc-gfortran ||
+            (yum install -y blas-devel lapack-devel gcc-gfortran)
+          # Ensure a modern CMake is available.
+          CIBW_BEFORE_BUILD: "python -m pip install --upgrade pip cmake ninja"
+          CIBW_TEST_REQUIRES: "pytest numpy"
+          CIBW_TEST_COMMAND: "pytest -q"
+
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels
+          path: wheelhouse/*.whl
+
+  build-sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --sdist
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz

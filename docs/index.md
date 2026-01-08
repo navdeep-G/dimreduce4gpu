@@ -1,3 +1,3 @@
 # dimreduce4gpu
 
-GPU-accelerated PCA and TruncatedSVD.
+Documentation for the project.
