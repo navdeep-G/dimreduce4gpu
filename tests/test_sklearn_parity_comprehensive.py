@@ -262,4 +262,3 @@ def test_tsvd_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: 
             assert err_ours <= (mult * err_sk + 1e-12)
     else:
         assert err_ours <= (1.10 * err_sk + 1e-12)
-
