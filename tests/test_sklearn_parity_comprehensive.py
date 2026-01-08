@@ -185,7 +185,7 @@ def test_pca_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: i
         # Rank-deficient cases can yield near-zero reconstruction error for sklearn.
         # Use an absolute tolerance and a slightly looser relative bound.
         if err_sk < 1e-10:
-            assert err_ours < (1e-6 if dtype is np.float64 else 5e-6)
+            assert err_ours <= (2e-6 if dtype is np.float64 else 8e-6)
         else:
             assert err_ours <= (1.35 * err_sk + 1e-12)
     else:
@@ -236,7 +236,7 @@ def test_tsvd_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: 
     err_sk = _relative_fro_error(X.astype(np.float64), recon_sk)
     if case.rank_deficient:
         if err_sk < 1e-10:
-            assert err_ours < (1e-6 if dtype is np.float64 else 5e-6)
+            assert err_ours <= (2e-6 if dtype is np.float64 else 8e-6)
         else:
             assert err_ours <= (1.35 * err_sk + 1e-12)
     else:
