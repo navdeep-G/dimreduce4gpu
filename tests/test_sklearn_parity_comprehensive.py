@@ -97,7 +97,6 @@ def _relative_fro_error(A: np.ndarray, B: np.ndarray) -> float:
 
 def _pca_reconstruct(X: np.ndarray, scores: np.ndarray, components: np.ndarray) -> np.ndarray:
     # PCA is defined on centered data.
-    Xc = _center(X)
     return scores @ components
 
 
@@ -112,7 +111,12 @@ def test_pca_cpu_matches_sklearn_full_solver(case: Case, dtype: np.dtype, seed: 
     _require_cpu_backend()
     X = _make_matrix(case, dtype, seed)
 
-    ours = PCA(n_components=case.k, backend="cpu", algorithm="cusolver", random_state=seed)
+    ours = PCA(
+        n_components=case.k,
+        backend="cpu",
+        algorithm="cusolver",
+        random_state=seed,
+    )
     X_ours = ours.fit_transform(X)
 
     sk = SkPCA(n_components=case.k, svd_solver="full", random_state=seed)
@@ -171,7 +175,8 @@ def test_pca_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: i
     X_sk = sk.fit_transform(X)
 
     angle = _max_principal_angle_deg(
-        np.asarray(ours.components_, dtype=np.float64), sk.components_.astype(np.float64)
+        np.asarray(ours.components_, dtype=np.float64),
+        sk.components_.astype(np.float64),
     )
     # NOTE: randomized methods are approximate and can return different but still
     # high-quality subspaces (especially when the spectrum is not well-separated).
@@ -181,11 +186,16 @@ def test_pca_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: i
 
     ours_components = np.asarray(ours.components_, dtype=np.float64)
     recon_ours = _pca_reconstruct(X, X_ours.astype(np.float64), ours_components)
-    recon_sk = _pca_reconstruct(X, X_sk.astype(np.float64), sk.components_.astype(np.float64))
+    recon_sk = _pca_reconstruct(
+        X,
+        X_sk.astype(np.float64),
+        sk.components_.astype(np.float64),
+    )
 
     # Compare how well each method reconstructs the centered data; require ours to
     # be within 10% of sklearn's reconstruction error.
-    X_centered = X.astype(np.float64) - X.astype(np.float64).mean(axis=0, keepdims=True)
+    X64 = X.astype(np.float64)
+    X_centered = X64 - X64.mean(axis=0, keepdims=True)
     err_ours = _relative_fro_error(X_centered, recon_ours)
     err_sk = _relative_fro_error(X_centered, recon_sk)
     if case.rank_deficient:
@@ -231,7 +241,8 @@ def test_tsvd_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: 
     X_sk = sk.fit_transform(X)
 
     angle = _max_principal_angle_deg(
-        np.asarray(ours.components_, dtype=np.float64), sk.components_.astype(np.float64)
+        np.asarray(ours.components_, dtype=np.float64),
+        sk.components_.astype(np.float64),
     )
     assert angle < 35.0
 
@@ -240,8 +251,9 @@ def test_tsvd_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: 
     ours_components = np.asarray(ours.components_, dtype=np.float64)
     recon_ours = X_ours.astype(np.float64) @ ours_components
     recon_sk = X_sk.astype(np.float64) @ sk.components_.astype(np.float64)
-    err_ours = _relative_fro_error(X.astype(np.float64), recon_ours)
-    err_sk = _relative_fro_error(X.astype(np.float64), recon_sk)
+    X64 = X.astype(np.float64)
+    err_ours = _relative_fro_error(X64, recon_ours)
+    err_sk = _relative_fro_error(X64, recon_sk)
     if case.rank_deficient:
         if err_sk < 1e-10:
             assert err_ours <= (2e-6 if dtype is np.float64 else 8e-6)
