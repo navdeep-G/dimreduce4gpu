@@ -1,11 +1,10 @@
-import pytest
 import numpy as np
+import pytest
 from sklearn.decomposition import PCA as SkPCA
 from sklearn.decomposition import TruncatedSVD as SkTSVD
 
 from dimreduce4gpu import PCA, TruncatedSVD
 from dimreduce4gpu.lib_dimreduce4cpu import cpu_built
-
 
 def _corr_abs(a: np.ndarray, b: np.ndarray) -> float:
     a = np.asarray(a).ravel()

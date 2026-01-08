@@ -1,9 +1,8 @@
-import pytest
 import numpy as np
+import pytest
 
 from dimreduce4gpu import PCA, TruncatedSVD
 from dimreduce4gpu.lib_dimreduce4cpu import cpu_built
-
 
 def _require_cpu_built():
     if not cpu_built():
