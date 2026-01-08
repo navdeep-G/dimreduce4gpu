@@ -57,8 +57,19 @@ def main() -> None:
     X *= np.linspace(1.0, 3.0, args.m, dtype=dtype)
 
     # PCA
-    ours_pca = PCA(n_components=args.k, backend="cpu", algorithm="power", n_iter=5, random_state=args.seed)
-    sk_pca = SkPCA(n_components=args.k, svd_solver="randomized", iterated_power=5, random_state=args.seed)
+    ours_pca = PCA(
+        n_components=args.k,
+        backend="cpu",
+        algorithm="power",
+        n_iter=5,
+        random_state=args.seed,
+    )
+    sk_pca = SkPCA(
+        n_components=args.k,
+        svd_solver="randomized",
+        iterated_power=5,
+        random_state=args.seed,
+    )
 
     def run_ours_pca(model=ours_pca, X=X):
         model.fit_transform(X)
@@ -70,7 +81,13 @@ def main() -> None:
     sk_pca_runs = _timeit(run_sk_pca, warmup=args.warmup, repeats=args.repeats)
 
     # TSVD
-    ours_tsvd = TruncatedSVD(n_components=args.k, backend="cpu", algorithm="power", n_iter=5, random_state=args.seed)
+    ours_tsvd = TruncatedSVD(
+        n_components=args.k,
+        backend="cpu",
+        algorithm="power",
+        n_iter=5,
+        random_state=args.seed,
+    )
     sk_tsvd = SkTSVD(n_components=args.k, algorithm="randomized", n_iter=5, random_state=args.seed)
 
     def run_ours_tsvd(model=ours_tsvd, X=X):
@@ -87,12 +104,26 @@ def main() -> None:
         "pca": {
             "ours": asdict(Result("dimreduce4gpu_cpu_pca", _median(ours_pca_runs), ours_pca_runs)),
             "sklearn": asdict(Result("sklearn_pca", _median(sk_pca_runs), sk_pca_runs)),
-            "speedup": _median(sk_pca_runs) / _median(ours_pca_runs) if _median(ours_pca_runs) > 0 else None,
+            "speedup": (
+                _median(sk_pca_runs) / _median(ours_pca_runs)
+                if _median(ours_pca_runs) > 0
+                else None
+            ),
         },
         "tsvd": {
-            "ours": asdict(Result("dimreduce4gpu_cpu_tsvd", _median(ours_tsvd_runs), ours_tsvd_runs)),
+            "ours": asdict(
+                Result(
+                    "dimreduce4gpu_cpu_tsvd",
+                    _median(ours_tsvd_runs),
+                    ours_tsvd_runs,
+                )
+            ),
             "sklearn": asdict(Result("sklearn_tsvd", _median(sk_tsvd_runs), sk_tsvd_runs)),
-            "speedup": _median(sk_tsvd_runs) / _median(ours_tsvd_runs) if _median(ours_tsvd_runs) > 0 else None,
+            "speedup": (
+                _median(sk_tsvd_runs) / _median(ours_tsvd_runs)
+                if _median(ours_tsvd_runs) > 0
+                else None
+            ),
         },
     }
 

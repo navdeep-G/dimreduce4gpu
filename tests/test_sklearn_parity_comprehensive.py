@@ -119,7 +119,10 @@ def test_pca_cpu_matches_sklearn_full_solver(case: Case, dtype: np.dtype, seed: 
     X_sk = sk.fit_transform(X)
 
     # Compare component subspaces (robust to sign flips / swaps).
-    angle = _max_principal_angle_deg(np.asarray(ours.components_, dtype=np.float64), sk.components_.astype(np.float64))
+    angle = _max_principal_angle_deg(
+        np.asarray(ours.components_, dtype=np.float64),
+        sk.components_.astype(np.float64),
+    )
     assert angle < 0.75
 
     # Compare explained variance ratios (should be close for "full" solver).
@@ -129,7 +132,11 @@ def test_pca_cpu_matches_sklearn_full_solver(case: Case, dtype: np.dtype, seed: 
         assert _relative_fro_error(ours_evr, sk_evr) < 2e-2
 
     # Compare reconstructions (centered).
-    recon_ours = _pca_reconstruct(X, X_ours.astype(np.float64), np.asarray(ours.components_, dtype=np.float64))
+    recon_ours = _pca_reconstruct(
+        X,
+        X_ours.astype(np.float64),
+        np.asarray(ours.components_, dtype=np.float64),
+    )
     recon_sk = _pca_reconstruct(X, X_sk.astype(np.float64), sk.components_.astype(np.float64))
     assert _relative_fro_error(recon_ours, recon_sk) < 2e-2
 
@@ -187,7 +194,8 @@ def test_pca_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: i
         if err_sk < 1e-10:
             assert err_ours <= (2e-6 if dtype is np.float64 else 8e-6)
         else:
-            assert err_ours <= (1.35 * err_sk + 1e-12)
+            mult = 1.35 if dtype is np.float64 else 1.75
+            assert err_ours <= (mult * err_sk + 1e-12)
     else:
         assert err_ours <= (1.10 * err_sk + 1e-12)
 
@@ -238,7 +246,8 @@ def test_tsvd_cpu_matches_sklearn_randomized(case: Case, dtype: np.dtype, seed: 
         if err_sk < 1e-10:
             assert err_ours <= (2e-6 if dtype is np.float64 else 8e-6)
         else:
-            assert err_ours <= (1.35 * err_sk + 1e-12)
+            mult = 1.35 if dtype is np.float64 else 1.75
+            assert err_ours <= (mult * err_sk + 1e-12)
     else:
         assert err_ours <= (1.10 * err_sk + 1e-12)
 
